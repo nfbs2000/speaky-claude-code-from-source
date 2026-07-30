@@ -16,6 +16,44 @@ sticky latch는 prompt cache key에 영향을 주는 feature가 한번 켜진 �
 중간에 꺼지지 않게 한다. `onChangeAppState`는 여러 mutation 경로에 side effect를
 흩뿌리지 않고 상태 diff 한 곳에서 알림과 동기화를 실행한다.
 
+## 두 수명주기
+
+```mermaid
+flowchart TB
+    P["Process singleton STATE"] --> P1["session ID · model · cost · telemetry"]
+    A["Reactive AppState"] --> A1["messages · permission queue · progress · view"]
+    P --> SYNC["명시적 동기화 지점"]
+    A --> SYNC
+    SYNC --> EFFECT["persistence · notification · analytics"]
+```
+
+분리 기준은 “model domain”이나 “UI domain” 같은 이름이 아니다. 얼마나 자주
+읽고, 얼마나 자주 바뀌며, 변경 때 누가 다시 계산되어야 하는지가 기준이다.
+
+## 실제 source 핵심 코드
+
+```typescript
+export type AppState = DeepImmutable<{
+  settings: SettingsJson
+  mainLoopModel: ModelSetting
+  expandedView: 'none' | 'tasks' | 'teammates'
+  coordinatorTaskIndex: number
+  toolPermissionContext: ToolPermissionContext
+  remoteSessionUrl: string | undefined
+}>
+```
+
+실제 `AppState`는 훨씬 크며 [`AppStateStore.ts` 89행부터][actual-state] 확인할
+수 있다. 여기서 중요한 것은 `DeepImmutable`다. component가 내부 field를
+직접 바꾸지 않고 store transition을 거치게 한다.
+
+## 상태를 읽는 질문
+
+- 이 값은 process가 살아 있는 동안 유지되는가, session마다 바뀌는가?
+- 변경될 때 UI 전체가 다시 그려져야 하는가?
+- prompt cache key에 들어가 세션 중 변경이 위험한가?
+- persistence 실패 시 실행 truth가 사라지는가, 진단 정보만 사라지는가?
+
 ## 가져갈 패턴
 
 - 도메인이 아니라 접근 패턴으로 상태를 나눈다.
@@ -37,3 +75,4 @@ Book SDK 3장의 메시지 상태, 10장의 파일 상태 보존, 24장의 세�
 [Chapter 3: State — The Two-Tier Architecture][source]
 
 [source]: https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch03-state.md
+[actual-state]: https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/state/AppStateStore.ts#L89-L118

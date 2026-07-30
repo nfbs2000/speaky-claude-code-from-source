@@ -32,6 +32,47 @@ Claude Code의 장기 기억은 거대한 비공개 데이터베이스보다 사
 background extraction이나 consolidation은 이 과정을 자동화할 수 있지만,
 사용자가 확인할 수 없는 hidden memory를 진실처럼 주입해서는 안 된다.
 
+## Memory 수명주기
+
+```mermaid
+flowchart LR
+    C["대화·tool result"] --> E["후보 추출"]
+    E --> D{"현재 repo에서 재도출 가능한가?"}
+    D -- "예" --> DROP["저장하지 않음"]
+    D -- "아니오" --> W["Markdown memory 기록"]
+    W --> I["manifest/index"]
+    I --> R["다음 session 관련 항목 recall"]
+    R --> V["현재 source와 freshness 검증"]
+```
+
+기억 추출 model이 저장했다는 사실은 기억 내용이 참이라는 보장이 아니다.
+source path, 작성 시각, project scope와 현재 repository를 다시 확인해야 한다.
+
+## 실제 source: fork로 memory를 추출한다
+
+```typescript
+await runForkedAgent({
+  promptMessages: [createUserMessage({ content: userPrompt })],
+  cacheSafeParams: createCacheSafeParams(context),
+  canUseTool: createMemoryFileCanUseTool(memoryPath),
+  querySource: 'session_memory',
+  forkLabel: 'session_memory',
+})
+```
+
+[`sessionMemory.ts` 300~329행][actual-memory]에서 setup context와 memory file
+전용 permission을 확인한다. background fork가 부모 mutable state를 직접
+공유하지 않도록 격리하는 이유도 함께 읽는다.
+
+## Memory와 evidence 구분
+
+| 자료 | 역할 |
+|---|---|
+| Memory Markdown | 다음 session 판단을 돕는 편집 가능한 지식 |
+| Session transcript | 실제 대화와 tool call 원전 |
+| OTel/Opik trace | 실행 시간·관계·평가를 조회하는 관측 표면 |
+| Skill | 반복 운영 절차 |
+
 ## 가져갈 패턴
 
 - 저장 형식보다 provenance와 수정 가능성을 먼저 설계한다.
@@ -52,3 +93,4 @@ Book SDK의 session persistence, project instruction, context, compaction 장과
 [Chapter 11: Memory — Learning Beyond the Conversation][source]
 
 [source]: https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch11-memory.md
+[actual-memory]: https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/services/SessionMemory/sessionMemory.ts#L300-L329

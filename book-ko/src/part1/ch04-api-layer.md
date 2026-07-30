@@ -19,6 +19,56 @@ prompt cache는 옵션 하나가 아니다. prompt 섹션 순서, memoization, b
 latch와 날짜 고정까지 좌우한다. 안정적인 prefix가 중간 턴에서 바뀌는 것은
 성능상 버그다.
 
+## 요청과 stream의 경계
+
+```mermaid
+sequenceDiagram
+    participant Loop as queryLoop
+    participant API as queryModelWithStreaming
+    participant VCR as withStreamingVCR
+    participant Claude
+
+    Loop->>API: messages·systemPrompt·tools·signal
+    API->>VCR: streaming 실행 위임
+    VCR->>Claude: SSE request
+    Claude-->>VCR: content block delta
+    VCR-->>API: StreamEvent·AssistantMessage
+    API-->>Loop: yield*
+```
+
+API layer는 tool을 실행하지 않는다. 인증·header·request·stream parsing을
+책임지고, 실행 여부는 loop와 permission/tool layer로 넘긴다.
+
+## 실제 source 핵심 코드
+
+```typescript
+export async function* queryModelWithStreaming({
+  messages,
+  systemPrompt,
+  thinkingConfig,
+  tools,
+  signal,
+  options,
+}): AsyncGenerator<StreamEvent | AssistantMessage, void> {
+  return yield* withStreamingVCR(messages, async function* () {
+    yield* queryModel(messages, systemPrompt, thinkingConfig, tools, signal, options)
+  })
+}
+```
+
+실제 error union을 포함한 코드는 [`claude.ts` 752~775행][actual-api]에 있다.
+`AbortSignal`이 API boundary까지 전달되는지, fallback이 같은 message를 어떻게
+정규화하는지 함께 추적한다.
+
+## 관측 지점
+
+| 지점 | 학생이 확인할 정보 |
+|---|---|
+| request 시작 | provider, model, system/tool schema version |
+| stream 시작 | first chunk 시간과 request ID |
+| stream 진행 | assistant delta와 tool input delta |
+| 종료 | usage, stop reason, error와 fallback 여부 |
+
 ## 가져갈 패턴
 
 - cache를 나중에 켜는 최적화가 아니라 초기 설계 제약으로 본다.
@@ -37,3 +87,4 @@ Book SDK 6b장의 API 통신 계층, 13~15장의 prompt cache와 21장의 모델
 [Chapter 4: Talking to Claude — The API Layer][source]
 
 [source]: https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch04-api-layer.md
+[actual-api]: https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/services/api/claude.ts#L752-L775

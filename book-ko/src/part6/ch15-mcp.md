@@ -23,6 +23,37 @@ MCP tool을 별도의 “낮은 등급 도구”로 취급하지 않는 것이 �
 정규화되면 built-in tool과 같은 model decision surface에 있어야 한다. 다만
 server 연결 실패와 schema 오류는 원래 출처를 유지한 채 보여 줘야 한다.
 
+```mermaid
+flowchart LR
+    C["MCP config"] --> T["transport 연결"]
+    T --> D["tools/list · schema discovery"]
+    D --> W["Claude tool contract로 wrapping"]
+    W --> P["공통 permission pipeline"]
+    P --> E["server tool 실행"]
+    E --> R["tool_result를 model에 반환"]
+```
+
+## 실제 source: placeholder가 되는 공통 tool
+
+```typescript
+export const MCPTool = buildTool({
+  isMcp: true,
+  isOpenWorld() {
+    return false
+  },
+  name: 'mcp',
+  maxResultSizeChars: 100_000,
+  async checkPermissions() {
+    return { behavior: 'passthrough', message: 'MCPTool requires permission.' }
+  },
+})
+```
+
+[`MCPTool.ts`][actual-mcp]의 기본 객체는 실행할 실제 server tool이 아니다.
+`mcpClient.ts`가 discovery 결과로 이름, description, schema와 `call()`을
+덮어쓸 수 있게 만든 공통 골격이다. 여기서 중요한 점은 동적으로 발견한 tool도
+`buildTool()`이 만든 동일한 permission과 result 계약에 들어온다는 것이다.
+
 ## MCP와 직접 도구
 
 MCP가 모든 control boundary의 정답은 아니다. 같은 Electron renderer의 상태를
@@ -41,6 +72,14 @@ MCP가 적합하다.
 - OAuth/token은 trace와 model context에 노출하지 않는다.
 - 내부 UI control을 이유 없이 remote protocol로 우회하지 않는다.
 
+## Source exercise
+
+1. [`MCPTool.ts`][actual-mcp]에서 `Overridden in mcpClient.ts` 주석을 모두 찾는다.
+2. 각 override가 discovery, permission, execution, presentation 중 어느 책임인지
+   분류한다.
+3. server 연결 실패가 model에게 정상 `tool_result`로 전달되는지, host가 임의의
+   성공 문자열로 바꾸는지 호출 경로를 따라간다.
+
 ## Book SDK에서 같이 보기
 
 Book SDK의 MCP, custom tool, permission 장과 연결된다. Notion 운영에는 공식
@@ -53,3 +92,4 @@ tool boundary를 유지하는 식으로 구분할 수 있다.
 [Chapter 15: MCP — The Universal Tool Protocol][source]
 
 [source]: https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch15-mcp.md
+[actual-mcp]: https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/tools/MCPTool/MCPTool.ts#L27-L75

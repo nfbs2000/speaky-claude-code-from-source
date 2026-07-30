@@ -21,6 +21,48 @@ vim mode 같은 입력 방식은 단순 boolean보다 mode를 명시한 discrimi
 안전하다. 현재 mode에서 존재하지 않는 field를 type level에서 사용할 수 없게
 하면 상호작용 버그가 줄어든다.
 
+## Byte에서 action까지
+
+```mermaid
+flowchart LR
+    B["stdin bytes·IME·paste"] --> T["tokenizer"]
+    T --> K["ParsedKeystroke"]
+    K --> C["현재 UI context"]
+    C --> R["keybinding resolver"]
+    R --> A["semantic action"]
+    A --> H["component handler"]
+```
+
+feature component는 escape sequence나 modifier alias를 직접 해석하지 않는다.
+parser가 platform 차이를 흡수한 뒤 `action`을 전달한다.
+
+## 실제 source: modifier 정규화
+
+```typescript
+export function parseKeystroke(input: string): ParsedKeystroke {
+  const parts = input.split('+')
+  const keystroke: ParsedKeystroke = {
+    key: '',
+    ctrl: false,
+    alt: false,
+    shift: false,
+    meta: false,
+    super: false,
+  }
+}
+```
+
+실제 switch는 `ctrl/control`, `alt/opt/option` 같은 alias를 같은 field로
+정규화한다. [`keybindings/parser.ts`][actual-input]에서 chord parser와 표시용
+canonicalization도 함께 확인한다.
+
+## 한글 입력을 볼 때
+
+IME composition 중 text를 확정 입력으로 오인하지 않는지, composer state
+변경이 timeline 전체 selector를 깨우지 않는지 확인한다. 입력 지연을 model
+latency로 오인하지 않도록 key event, state update와 render 시간을 분리해
+계측해야 한다.
+
 ## 가져갈 패턴
 
 - raw bytes, parsed key, semantic action을 서로 다른 계층으로 둔다.
@@ -41,3 +83,4 @@ controlled input의 render 범위, logger, selector와 IME composition 경로를
 [Chapter 14: Input and Interaction][source]
 
 [source]: https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch14-input-interaction.md
+[actual-input]: https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/keybindings/parser.ts#L9-L35

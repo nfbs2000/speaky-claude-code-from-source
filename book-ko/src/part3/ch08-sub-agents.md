@@ -43,6 +43,53 @@ tool call은 제거한다. 그렇지 않으면 API가 `tool_use`와 `tool_result
 context를 생략할 수 있다. 권한 역시 부모 권한을 무조건 복제하지 않는다.
 각 자식이 실제로 필요한 tool과 permission만 받도록 하는 것이 실행 경계다.
 
+## 생성과 반환 경로
+
+```mermaid
+sequenceDiagram
+    participant Parent
+    participant AgentTool
+    participant Child as runAgent()
+    participant Model
+
+    Parent->>AgentTool: description·prompt·type·model
+    AgentTool->>AgentTool: definition·MCP·permission 해석
+    AgentTool->>Child: 독립 context와 tool pool
+    Child->>Model: child query loop
+    Model-->>Child: tool use·final result
+    Child-->>AgentTool: 완료·실패·background 상태
+    AgentTool-->>Parent: 결과 observation
+```
+
+부모가 받는 것은 자식의 hidden reasoning 전체가 아니라 task 결과와 필요한
+상태다. raw child transcript는 감사 surface에 보존할 수 있지만 primary
+사용자 대화와 자동으로 합쳐지지 않는다.
+
+## 실제 source: Agent 도구의 동적 prompt
+
+```typescript
+export const AgentTool = buildTool({
+  async prompt({ agents, tools, getToolPermissionContext }) {
+    const permission = await getToolPermissionContext()
+    const filtered = filterDeniedAgents(agents, permission, AGENT_TOOL_NAME)
+    return getPrompt(filtered)
+  },
+  name: AGENT_TOOL_NAME,
+  aliases: [LEGACY_AGENT_TOOL_NAME],
+})
+```
+
+실제 source는 MCP requirement와 coordinator mode도 함께 처리한다.
+[`AgentTool.tsx` 196행부터][actual-agent]에서 schema가 실행 가능 agent와
+permission에 따라 어떻게 달라지는지 확인한다.
+
+## 관측 체크
+
+- SDK에서 `Agent` tool use와 matching result가 보이는가?
+- parent session과 child session/task ID를 구분할 수 있는가?
+- child가 사용자 question을 직접 투사하지 않고 parent에 보고하는가?
+- background 완료가 parent를 깨우는 명시적 event 또는 result가 있는가?
+
 ## 가져갈 패턴
 
 - 위임은 역할 이름이 아니라 별도 context와 권한을 제공할 가치가 있을 때 한다.
@@ -63,3 +110,4 @@ event 이름으로 노출된다고 가정해서는 안 된다.
 [Chapter 8: Spawning Sub-Agents][source]
 
 [source]: https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch08-sub-agents.md
+[actual-agent]: https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/tools/AgentTool/AgentTool.tsx#L196-L235

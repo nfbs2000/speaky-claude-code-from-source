@@ -36,6 +36,44 @@ fork는 부모 상태를 복사하지만 부모와 같은 agent는 아니다.
 이 구분이 없으면 fork를 session reuse와 혼동하기 쉽다. session reuse는 같은
 대화를 이어가는 것이고, fork는 같은 과거에서 출발하는 새 실행 가지다.
 
+## Fresh, resume와 fork
+
+```mermaid
+flowchart TB
+    H["기존 대화 history"]
+    H --> R["Resume: 같은 session을 계속 사용"]
+    H --> F["Fork: 같은 prefix에서 새 branch"]
+    S["요약·새 prompt"] --> N["Fresh agent: 새 cache path"]
+    F --> C["부모 cache prefix 공유 가능"]
+    R --> C2["같은 conversation history 유지"]
+```
+
+세 경로는 session ID와 cache 의미가 다르다. permission 승인 후 같은 stream이
+이어지는 것은 resume나 fork가 아니라 현재 turn의 계속 실행이다.
+
+## 실제 source: cache-safe parameter
+
+```typescript
+export type CacheSafeParams = {
+  systemPrompt: SystemPrompt
+  userContext: { [k: string]: string }
+  systemContext: { [k: string]: string }
+  toolUseContext: ToolUseContext
+  forkContextMessages: Message[]
+}
+```
+
+[`forkedAgent.ts`][actual-fork]는 system prompt, tools, model, message prefix와
+thinking config가 cache key에 영향을 준다고 주석으로 명시한다. field가 의미상
+비슷한지만 보는 것이 아니라 실제 직렬화 prefix가 같아야 한다.
+
+## 증거로 확인하기
+
+1. fork 전후 `cache_read_input_tokens`를 비교한다.
+2. model이나 tool schema가 달라진 fork를 별도로 실행한다.
+3. cache hit 차이를 usage에서 확인한다.
+4. session ID가 같다는 사실만으로 fork나 cache hit을 주장하지 않는다.
+
 ## 가져갈 패턴
 
 - 캐시 공유는 prompt 내용뿐 아니라 prompt 조립 순서의 계약이다.
@@ -56,3 +94,4 @@ hit을 증명할 수는 없다.
 [Chapter 9: Fork Agents and Prompt Cache Sharing][source]
 
 [source]: https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch09-fork-agents.md
+[actual-fork]: https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/utils/forkedAgent.ts#L43-L72

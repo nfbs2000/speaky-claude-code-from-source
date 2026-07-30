@@ -19,6 +19,51 @@
 resolver를 지나 다시 메시지로 돌아온다. CLI, SDK와 서브에이전트도 같은 루프를
 사용한다.
 
+## 전체 실행 구조
+
+```mermaid
+flowchart TB
+    UI["REPL · SDK · Headless"] --> Q["query() async generator"]
+    Q --> API["API streaming layer"]
+    API --> MODEL["Claude model"]
+    MODEL --> Q
+    Q --> PERM["Permission resolver"]
+    PERM --> TOOLS["Self-describing tools"]
+    TOOLS --> OBS["tool_result observation"]
+    OBS --> Q
+    Q --> STATE["Process STATE · AppState"]
+    Q --> MEMORY["Memory · Session"]
+    Q --> HOOKS["Lifecycle hooks"]
+```
+
+이 그림의 중심은 UI나 model이 아니라 `query()`다. UI는 message를 소비하고,
+model은 다음 action을 제안하며, tool은 side effect를 수행한다. 어느 계층도
+다른 계층의 실패를 성공으로 바꿀 권한은 없다.
+
+## 실제 source 핵심 코드
+
+```typescript
+export async function* query(
+  params: QueryParams,
+): AsyncGenerator<StreamEvent | Message, Terminal> {
+  const terminal = yield* queryLoop(params, [])
+  return terminal
+}
+```
+
+실제 union과 command lifecycle을 포함한 전체 signature는
+[`src/query.ts` 219~235행][actual-query]에서 확인한다. architecture를 읽을 때
+“모든 요청이 정말 이 함수로 들어오는가?”를 caller별로 역추적하는 것이 첫
+실습이다.
+
+## 관측과 해석
+
+| 구분 | 확인할 수 있는 것 |
+|---|---|
+| SDK 관측 | assistant, tool use/result, usage, result와 error |
+| source 해석 | generator transition, store 분리, hook 호출 순서 |
+| 확인 불가 | source에 존재한다는 이유만으로 현재 build에서 활성화됐다는 주장 |
+
 ## 가져갈 패턴
 
 - callback graph보다 종료 이유가 타입으로 보이는 generator loop
@@ -36,3 +81,4 @@ Book SDK 1장 전체 스택, 3장 에이전트 루프, 20장 에이전트 생성
 [Chapter 1: The Architecture of an AI Agent][source]
 
 [source]: https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch01-architecture.md
+[actual-query]: https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query.ts#L219-L235

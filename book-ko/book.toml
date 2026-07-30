@@ -12,3 +12,5 @@ build-dir = "book"
 default-theme = "light"
 preferred-dark-theme = "ayu"
 git-repository-url = "https://github.com/nfbs2000/speaky-claude-code-from-source"
+additional-js = ["mermaid-init.js"]
+additional-css = ["mermaid.css"]

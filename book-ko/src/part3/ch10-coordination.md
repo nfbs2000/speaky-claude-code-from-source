@@ -36,6 +36,55 @@ agent 역시 완료 사실과 결과를 부모가 다시 읽을 수 있는 경�
 근거로 재구성한 해석임을 밝혀야 한다. 존재하지 않는 노드를 raw evidence인
 것처럼 표시하면 안 된다.
 
+## 조정의 네 책임
+
+```mermaid
+flowchart LR
+    LEAD["Primary lead"]
+    LEAD --> SPAWN["Agent spawn"]
+    LEAD --> TASK["Task 상태·의존성"]
+    LEAD --> ROUTE["명시적 message routing"]
+    LEAD --> USER["사용자 질문·permission"]
+    SPAWN --> W1["Worker A"]
+    SPAWN --> W2["Worker B"]
+    W1 --> ROUTE
+    W2 --> ROUTE
+    ROUTE --> LEAD
+```
+
+Team이 있다는 사실만으로 worker text가 lead에게 전달되지는 않는다. routing
+tool과 task result가 있어야 한다. 사용자 interaction은 lead가 소유하고 worker는
+질문이나 차단 이유를 lead에게 보고한다.
+
+## 실제 source: TaskCreate도 일반 Tool이다
+
+```typescript
+export const TaskCreateTool = buildTool({
+  name: TASK_CREATE_TOOL_NAME,
+  searchHint: 'create a task in the task list',
+  userFacingName() {
+    return 'TaskCreate'
+  },
+  isConcurrencySafe() {
+    return true
+  },
+})
+```
+
+전체 schema와 enable gate는
+[`TaskCreateTool.ts` 48행부터][actual-task]에 있다. Task는 숨은 추론 구조가
+아니라 tool call과 persistence를 가진 명시적 제품 기능이다.
+
+## SDK event를 graph로 바꿀 때
+
+| graph 요소 | 필요한 근거 |
+|---|---|
+| worker node | agent/session/task metadata |
+| task edge | parent ID 또는 명시적 dependency |
+| message edge | SendMessage 같은 routing event |
+| 완료 상태 | terminal tool result 또는 task update |
+| “dynamic workflow” label | 위 사건을 해석한 projection임을 표시 |
+
 ## 가져갈 패턴
 
 - spawn, task tracking, message routing, user interaction을 서로 다른 책임으로 둔다.
@@ -56,3 +105,4 @@ Book SDK의 Team, swarm, task event, workflow 시각화 장과 직접 연결된�
 [Chapter 10: Tasks, Coordination, and Swarms][source]
 
 [source]: https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch10-coordination.md
+[actual-task]: https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/tools/TaskCreateTool/TaskCreateTool.ts#L48-L75

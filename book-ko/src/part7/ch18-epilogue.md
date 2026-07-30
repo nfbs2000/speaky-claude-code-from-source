@@ -1,5 +1,19 @@
 # 18장: 우리가 배운 것
 
+## 한 장으로 보는 실행 경계
+
+```mermaid
+flowchart TB
+    I["입력·remote command"] --> Q["async generator query loop"]
+    Q --> M["model stream"]
+    Q --> T["self-describing tools"]
+    T --> P["permission·hook·MCP boundary"]
+    T --> S["subagent·fork"]
+    M --> C["context·compaction·memory"]
+    Q --> O["terminal result"]
+    Q --> E["raw event·profile evidence"]
+```
+
 ## 원저자가 정리한 다섯 가지 선택
 
 ### 1. Callback graph보다 generator loop
@@ -57,8 +71,36 @@ SDK는 공식 SDK에서 실제로 관측한 event와 API 계약을 중심에 두
 
 세 층이 일치할 때는 강한 설명이 되고, 다를 때는 그 차이 자체가 학습 자료다.
 
+## 실제 source: 종료 이유를 반환하는 generator
+
+```typescript
+export async function* query(
+  params: QueryParams,
+): AsyncGenerator<StreamEvent | RequestStartEvent | Message, Terminal> {
+  const consumedCommandUuids: string[] = []
+  const terminal = yield* queryLoop(params, consumedCommandUuids)
+  for (const uuid of consumedCommandUuids) {
+    notifyCommandLifecycle(uuid, 'completed')
+  }
+  return terminal
+}
+```
+
+실제 union에는 tombstone과 tool summary도 포함된다. 핵심은
+[`query()`][actual-query]가 stream 값을 `yield`하면서도 마지막에 `Terminal`을
+반환한다는 점이다. UI가 마지막 delta를 보았다는 사실과 run이 어떤 이유로
+종료됐다는 사실은 같은 신호가 아니다.
+
+## 독자가 직접 검증할 것
+
+- `queryLoop()`의 모든 `continue`와 `return`이 어떤 transition/terminal을 남기는가?
+- tool result는 다음 model iteration의 message에 어떻게 들어가는가?
+- SDK에서 관측한 event만으로 source 내부 최적화를 증명할 수 있는가?
+- 다이어그램이 실제 source보다 더 강한 존재론을 주장하고 있지 않은가?
+
 ## 원문
 
 [Chapter 18: What We Learned][source]
 
 [source]: https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch18-epilogue.md
+[actual-query]: https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query.ts#L219-L248

@@ -14,6 +14,45 @@
 - `setup.ts`는 설정과 migration을 idempotent하게 적용한다.
 - `replLauncher.ts`가 초기 prompt를 잃지 않고 UI와 loop를 연결한다.
 
+## 부팅 funnel
+
+```mermaid
+flowchart LR
+    A["argv 캡처"] --> B{"Fast path인가?"}
+    B -- "MCP·특수 명령" --> F["필요한 handler만 load"]
+    B -- "일반 session" --> C["main() 보안 초기화"]
+    C --> D["설정·trust·migration"]
+    D --> E["AppState와 runtime 조립"]
+    E --> R["REPL · print · SDK 실행"]
+```
+
+부팅은 기능을 많이 준비하는 과정이 아니라, 필요하지 않은 범위를 가능한 빨리
+제외하는 과정이다. 특히 repository를 신뢰하기 전에 project hook이나 실행
+가능한 설정을 평가하면 startup 순서가 곧 권한 상승 경로가 된다.
+
+## 실제 source 핵심 코드
+
+```typescript
+export async function main() {
+  profileCheckpoint('main_function_start')
+  process.env.NoDefaultCurrentDirectoryInExePath = '1'
+  initializeWarningHandler()
+  process.on('exit', () => {
+    resetCursor()
+  })
+}
+```
+
+Windows PATH hijacking 방어가 command 실행보다 먼저 놓여 있다는 점을 본다.
+전체 초기화 순서는 [`src/main.tsx` 585행부터][actual-main] 따라갈 수 있다.
+
+## 직접 확인하기
+
+1. `src/entrypoints/cli.tsx`에서 fast path를 찾는다.
+2. `main_function_start` 이후 checkpoint 순서를 적는다.
+3. trust 확인 전에 읽는 설정과 이후에 실행하는 hook을 구분한다.
+4. startup trace에서 checkpoint가 실제로 기록됐는지 확인한다.
+
 ## 가져갈 패턴
 
 - 느린 I/O를 모듈 평가와 병렬화한다.
@@ -35,3 +74,4 @@ gate 생명주기와 연결된다.
 [Chapter 2: Starting Fast — The Bootstrap Pipeline][source]
 
 [source]: https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch02-bootstrap.md
+[actual-main]: https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/main.tsx#L585-L615

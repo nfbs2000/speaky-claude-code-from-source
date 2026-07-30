@@ -31,6 +31,51 @@ snapshot으로 고정하는 보안 경계를 설명한다.
 Skill 설명만으로 파일을 수정하거나 trace를 발행할 수는 없다. 반대로 tool이
 있어도 어떤 순서로 관찰하고 검증할지 모르면 안정적인 운영이 되지 않는다.
 
+## 확장 경계
+
+```mermaid
+flowchart TB
+    MODEL["Agent 판단"]
+    SKILL["Skill: 절차·지식"]
+    TOOL["Tool: 실행·관찰"]
+    HOOK["Hook: lifecycle 정책"]
+    PLUGIN["Plugin: 배포 단위"]
+
+    PLUGIN --> SKILL
+    PLUGIN --> TOOL
+    PLUGIN --> HOOK
+    SKILL --> MODEL
+    MODEL --> TOOL
+    TOOL --> HOOK
+    HOOK --> TOOL
+```
+
+Skill은 tool call을 대신하지 않고, Hook은 model의 다음 reasoning을 대신하지
+않는다. 각 경계가 실제로 어떤 input/output을 갖는지 분리해 설명해야 한다.
+
+## 실제 source: Skill도 Tool 계약으로 들어온다
+
+```typescript
+export const SkillTool = buildTool({
+  name: SKILL_TOOL_NAME,
+  description: async ({ skill }) => `Execute skill: ${skill}`,
+  prompt: async () => getPrompt(getProjectRoot()),
+  toAutoClassifierInput: ({ skill }) => skill ?? '',
+})
+```
+
+실제 validation과 output schema는
+[`SkillTool.ts` 331행부터][actual-skill]에 있다. Skill 본문이 바로 system
+prompt 전체에 합쳐지는 것이 아니라, 선택된 skill이 tool을 통해 확장 prompt로
+들어가는 경로를 확인한다.
+
+## 직접 확인하기
+
+1. skill metadata와 실제 `SKILL.md` 로딩 시점을 찾는다.
+2. hook snapshot이 startup 이후 암묵적으로 다시 읽히는지 확인한다.
+3. MCP tool과 built-in tool이 `Tool` boundary에서 어디서 같아지는지 찾는다.
+4. 실패한 hook의 exit code가 성공 result로 바뀌지 않는지 확인한다.
+
 ## 가져갈 패턴
 
 - skill metadata는 짧고 선택 가능하게, 본문은 필요할 때만 로드한다.
@@ -51,3 +96,4 @@ Education Shell과 Opik을 실제로 제어하는 능력은 별도의 실제 too
 [Chapter 12: Extensibility — Skills and Hooks][source]
 
 [source]: https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch12-extensibility.md
+[actual-skill]: https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/tools/SkillTool/SkillTool.ts#L331-L365

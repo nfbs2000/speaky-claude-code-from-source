@@ -30,6 +30,45 @@ Education Shell은 web/Electron UI이므로 이 terminal renderer를 복제할 �
 분리한다”는 원칙이다. raw event를 화면에 JSON으로 쏟는 것과 빠른 UI는 같은
 문제가 아니다.
 
+## Rendering hot path
+
+```mermaid
+flowchart LR
+    R["React·Ink component tree"] --> L["layout"]
+    L --> C["packed terminal cells"]
+    C --> D["이전 frame과 diff"]
+    D --> A["최소 ANSI 출력"]
+    A --> T["Terminal"]
+    P["string·style·buffer pool"] --> C
+```
+
+React는 화면의 의미를 표현하지만, 고빈도 character diff는 더 낮은 rendering
+계층이 담당한다. 상태 update와 실제 terminal write를 같은 비용으로 취급하지
+않는다.
+
+## 실제 source: frame 재사용
+
+```typescript
+reset(width: number, height: number, screen: Screen): void {
+  this.width = width
+  this.height = height
+  this.screen = screen
+  this.operations.length = 0
+  resetScreen(screen, width, height)
+  if (this.charCache.size > 16384) this.charCache.clear()
+}
+```
+
+[`Output.reset()`][actual-output]은 backing storage와 character cache를 frame
+사이에 재사용한다. cache가 무한히 자라지 않도록 명시적 상한도 둔다.
+
+## UI projection 검토
+
+- assistant delta가 올 때 전체 message tree가 다시 layout되는가?
+- tool progress label이 container 크기를 바꾸는가?
+- raw event와 사용자용 message가 같은 component에서 JSON으로 섞이는가?
+- 실패와 permission state가 색상만으로 구분되는가?
+
 ## 가져갈 패턴
 
 - 상태 의미와 고빈도 painting hot path를 분리한다.
@@ -49,3 +88,4 @@ tool 상태와 필요한 evidence link를 읽을 수 있는 형태로 투사한�
 [Chapter 13: The Terminal UI][source]
 
 [source]: https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch13-terminal-ui.md
+[actual-output]: https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/ink/output.ts#L170-L202

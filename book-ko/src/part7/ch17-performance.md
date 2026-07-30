@@ -29,6 +29,32 @@ session마다 변하는 정보는 뒤에 두어 prefix를 유지한다. 동적 t
 이 기법들은 화려한 알고리즘보다 병목이 실제로 있는 위치에 기본기를 적용한
 결과다.
 
+```mermaid
+flowchart LR
+    U["user input"] --> C["context loading"]
+    C --> S["schema·client setup"]
+    S --> H["response headers"]
+    H --> F["first chunk / TTFT"]
+    F --> X["tool execution"]
+    X --> E["turn end"]
+```
+
+## 실제 source: 추측 전에 checkpoint
+
+```typescript
+export function queryCheckpoint(name: string): void {
+  if (!ENABLED) return
+  const perf = getPerformance()
+  perf.mark(name)
+  memorySnapshots.set(name, process.memoryUsage())
+}
+```
+
+[`queryProfiler.ts`][actual-profiler]는 user input부터 context loading, schema
+build, request dispatch, response header, first chunk, tool execution까지 서로 다른
+checkpoint를 둔다. “느리다”는 한 문장을 TTFT, tool latency, render latency로
+분해할 수 있어야 최적화가 설계 오염으로 변하지 않는다.
+
 ## 가져갈 패턴
 
 - startup, first token, tool latency, render 시간을 따로 측정한다.
@@ -36,6 +62,14 @@ session마다 변하는 정보는 뒤에 두어 prefix를 유지한다. 동적 t
 - cache hit은 prompt 구조와 실제 usage field로 검증한다.
 - speculation에는 abort와 정상 경로 복귀가 있어야 한다.
 - 성능 측정 없는 최적화는 architecture를 복잡하게 만들 수 있다.
+
+## 측정 실습
+
+1. `query_first_chunk_received - query_api_request_sent`를 provider 응답 지연으로
+   분리한다.
+2. `query_tool_execution_start/end`에서 느린 tool 하나를 찾는다.
+3. 같은 run의 renderer timing과 비교해 model, tool, UI 중 실제 병목을 정한다.
+4. cache usage field가 없으면 prompt cache hit을 관측했다고 쓰지 않는다.
 
 ## Book SDK에서 같이 보기
 
@@ -49,3 +83,4 @@ cache read/write와 tool timing을 기록하고, 관측되지 않은 cache hit�
 [Chapter 17: Every Millisecond, Every Token][source]
 
 [source]: https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch17-performance.md
+[actual-profiler]: https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/utils/queryProfiler.ts#L1-L76

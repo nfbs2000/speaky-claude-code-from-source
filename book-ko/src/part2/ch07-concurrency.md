@@ -16,6 +16,71 @@ call이 stream으로 들어올 때 admission rule을 평가하고, 안전한 작
 subprocess를 중단한다. speculative path를 사용할 수 없게 되면 `discard()`로
 정상 non-streaming 실행에 되돌아간다.
 
+## 연속 구간으로 생각하기
+
+```mermaid
+flowchart LR
+    A["Read A"] --> B["Read B"]
+    B --> C["Grep"]
+    C --> D["Edit"]
+    D --> E["Read C"]
+    E --> F["Read D"]
+
+    subgraph Batch1["병렬 batch"]
+      A
+      B
+      C
+    end
+    subgraph Serial["독점 실행"]
+      D
+    end
+    subgraph Batch2["병렬 batch"]
+      E
+      F
+    end
+```
+
+병렬 안전한 call 사이에 쓰기 call이 하나 들어오면 전체 목록을 병렬화하지
+않는다. 순서를 유지한 채 안전한 연속 구간만 batch로 만든다.
+
+## 실제 source: sibling abort 경계
+
+```typescript
+export class StreamingToolExecutor {
+  private tools: TrackedTool[] = []
+  private hasErrored = false
+  private siblingAbortController: AbortController
+  private discarded = false
+}
+```
+
+실제 constructor와 `discard()`는
+[`StreamingToolExecutor.ts` 40~69행][actual-streaming]에 있다. sibling
+controller는 Bash 오류 때 함께 실행 중인 subprocess를 중단하지만 parent
+turn 전체를 abort하지 않는다. 서로 다른 중단 범위를 같은 signal로 합치지
+않은 것이 핵심이다.
+
+## 완료 순서와 제출 순서
+
+```mermaid
+sequenceDiagram
+    participant Model
+    participant Exec as StreamingToolExecutor
+    participant A as Read A
+    participant B as Read B
+
+    Model->>Exec: A, B 순서로 tool_use
+    Exec->>A: start
+    Exec->>B: start
+    B-->>Exec: 먼저 완료
+    A-->>Exec: 나중 완료
+    Exec-->>Model: A result
+    Exec-->>Model: B result
+```
+
+병렬 실행은 wall-clock 완료 순서를 바꾸지만 model이 요청한 논리 순서를 바꾸지
+않는다. 이 보존이 없으면 다음 reasoning에서 tool call과 observation이 어긋난다.
+
 ## 가져갈 패턴
 
 - operation type이 아니라 실제 argument로 병렬 안전성을 분류한다.
@@ -33,3 +98,4 @@ Book SDK 4장의 동시성·streaming·interrupt와 27장의 프로덕션 실행
 [Chapter 7: Concurrent Tool Execution][source]
 
 [source]: https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch07-concurrency.md
+[actual-streaming]: https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/services/tools/StreamingToolExecutor.ts#L40-L88
