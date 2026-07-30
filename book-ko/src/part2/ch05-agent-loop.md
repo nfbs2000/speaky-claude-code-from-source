@@ -74,23 +74,17 @@ backpressure를 제공한다. SDK consumer가 tool progress를 처리하는 동�
 구간에 도달하지 않는다.
 
 ```mermaid
-sequenceDiagram
-    participant Caller as REPL·SDK·Subagent
-    participant Query as query()
-    participant Loop as queryLoop()
-    participant Model
-    participant Tool
-
-    Caller->>Query: generator 시작
-    Query->>Loop: yield* queryLoop(...)
-    Loop->>Model: streaming request
-    Model-->>Loop: assistant + tool_use
-    Loop->>Tool: permission 후 실행
-    Tool-->>Loop: tool_result
-    Loop->>Model: 결과를 포함한 다음 turn
-    Model-->>Loop: final assistant
-    Loop-->>Query: Terminal 반환
-    Query-->>Caller: command 완료 + Terminal
+flowchart LR
+    A["Client surfaces"] --> B["Query generator"]
+    B --> C["Agent loop"]
+    C --> D["Model stream"]
+    D --> E["Tool call"]
+    E --> F["Permission and execution"]
+    F --> G["Tool result"]
+    G --> C
+    D --> H["Final assistant"]
+    H --> I["Terminal"]
+    I --> A
 ```
 
 ## Loop state를 완전히 다시 만든다
