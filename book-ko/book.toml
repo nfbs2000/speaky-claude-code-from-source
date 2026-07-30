@@ -1,0 +1,14 @@
+[book]
+authors = ["Alejandro Balderas 원저 · nfbs2000 한국어판"]
+language = "ko"
+src = "src"
+title = "Claude Code from Source 한국어 동반판"
+description = "부팅부터 에이전트 루프, 도구, 멀티에이전트와 성능까지 실행 경로로 읽는 한국어판"
+
+[build]
+build-dir = "book"
+
+[output.html]
+default-theme = "light"
+preferred-dark-theme = "ayu"
+git-repository-url = "https://github.com/nfbs2000/speaky-claude-code-from-source"
