@@ -22,18 +22,14 @@ latch와 날짜 고정까지 좌우한다. 안정적인 prefix가 중간 턴에�
 ## 요청과 stream의 경계
 
 ```mermaid
-sequenceDiagram
-    participant Loop as queryLoop
-    participant API as queryModelWithStreaming
-    participant VCR as withStreamingVCR
-    participant Claude
-
-    Loop->>API: messages·systemPrompt·tools·signal
-    API->>VCR: streaming 실행 위임
-    VCR->>Claude: SSE request
-    Claude-->>VCR: content block delta
-    VCR-->>API: StreamEvent·AssistantMessage
-    API-->>Loop: yield*
+flowchart LR
+    L["Agent loop"] --> A["Streaming API boundary"]
+    A --> V["Streaming recorder wrapper"]
+    V --> C["Claude API request"]
+    C --> D["Content block deltas"]
+    D --> V
+    V --> E["Stream events and assistant messages"]
+    E --> L
 ```
 
 API layer는 tool을 실행하지 않는다. 인증·header·request·stream parsing을
