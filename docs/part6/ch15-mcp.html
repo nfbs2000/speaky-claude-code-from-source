@@ -1,0 +1,310 @@
+<!DOCTYPE HTML>
+<html lang="ko" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>15장: MCP — 범용 도구 프로토콜 - Claude Code from Source 한국어 동반판</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="부팅부터 에이전트 루프, 도구, 멀티에이전트와 성능까지 실행 경로로 읽는 한국어판">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../mermaid.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Claude Code from Source 한국어 동반판</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/nfbs2000/speaky-claude-code-from-source" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="15장-mcp--범용-도구-프로토콜"><a class="header" href="#15장-mcp--범용-도구-프로토콜">15장: MCP — 범용 도구 프로토콜</a></h1>
+<h2 id="원저자의-관점"><a class="header" href="#원저자의-관점">원저자의 관점</a></h2>
+<p>MCP의 가치는 새로운 tool call 문법을 만드는 데 있지 않다. 외부 server가
+자신의 tool과 resource를 발견 가능하게 공개하고, agent client가 이를 내장
+tool과 같은 실행 계약으로 다룰 수 있게 하는 데 있다.</p>
+<p>Claude Code는 stdio, HTTP, SSE, WebSocket, SDK와 IDE/remote 계열을 포함한 여러
+transport를 지원한다. transport는 연결 수명주기와 인증 방식이 다르지만,
+discovery 이후 model이 보는 tool은 공통 이름, description, input schema와
+result contract로 정규화된다.</p>
+<h2 id="연결에서-실행까지"><a class="header" href="#연결에서-실행까지">연결에서 실행까지</a></h2>
+<ol>
+<li>설정과 scope에서 MCP server 목록을 읽는다.</li>
+<li>transport별 connection과 인증을 준비한다.</li>
+<li>server의 tool 목록과 schema를 조회한다.</li>
+<li>충돌 없는 이름과 안정적인 description으로 wrapping한다.</li>
+<li>일반 tool pipeline에서 permission, execution과 result budget을 적용한다.</li>
+</ol>
+<p>MCP tool을 별도의 “낮은 등급 도구”로 취급하지 않는 것이 중요하다. 한 번
+정규화되면 built-in tool과 같은 model decision surface에 있어야 한다. 다만
+server 연결 실패와 schema 오류는 원래 출처를 유지한 채 보여 줘야 한다.</p>
+<pre><code class="language-mermaid">flowchart LR
+    C["MCP config"] --&gt; T["transport 연결"]
+    T --&gt; D["tools/list · schema discovery"]
+    D --&gt; W["Claude tool contract로 wrapping"]
+    W --&gt; P["공통 permission pipeline"]
+    P --&gt; E["server tool 실행"]
+    E --&gt; R["tool_result를 model에 반환"]
+</code></pre>
+<h2 id="실제-source-placeholder가-되는-공통-tool"><a class="header" href="#실제-source-placeholder가-되는-공통-tool">실제 source: placeholder가 되는 공통 tool</a></h2>
+<pre><code class="language-typescript">export const MCPTool = buildTool({
+  isMcp: true,
+  isOpenWorld() {
+    return false
+  },
+  name: 'mcp',
+  maxResultSizeChars: 100_000,
+  async checkPermissions() {
+    return { behavior: 'passthrough', message: 'MCPTool requires permission.' }
+  },
+})
+</code></pre>
+<p><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/tools/MCPTool/MCPTool.ts#L27-L75"><code>MCPTool.ts</code></a>의 기본 객체는 실행할 실제 server tool이 아니다.
+<code>mcpClient.ts</code>가 discovery 결과로 이름, description, schema와 <code>call()</code>을
+덮어쓸 수 있게 만든 공통 골격이다. 여기서 중요한 점은 동적으로 발견한 tool도
+<code>buildTool()</code>이 만든 동일한 permission과 result 계약에 들어온다는 것이다.</p>
+<h2 id="mcp와-직접-도구"><a class="header" href="#mcp와-직접-도구">MCP와 직접 도구</a></h2>
+<p>MCP가 모든 control boundary의 정답은 아니다. 같은 Electron renderer의 상태를
+즉시 조작하고 관찰하는 기능은 typed IPC tool이 더 단순할 수 있다. 외부 Notion,
+database, browser처럼 독립 service와 재사용 가능한 protocol 경계가 필요할 때
+MCP가 적합하다.</p>
+<p>핵심은 transport 선택이 아니라 agent가 tool result를 온전히 받고 다음 행동을
+스스로 결정할 수 있는지다.</p>
+<h2 id="가져갈-패턴"><a class="header" href="#가져갈-패턴">가져갈 패턴</a></h2>
+<ul>
+<li>protocol transport와 model-facing tool contract를 분리한다.</li>
+<li>server가 제공한 failure를 fake success로 바꾸지 않는다.</li>
+<li>tool 이름 충돌과 description 길이를 안정적으로 정규화한다.</li>
+<li>OAuth/token은 trace와 model context에 노출하지 않는다.</li>
+<li>내부 UI control을 이유 없이 remote protocol로 우회하지 않는다.</li>
+</ul>
+<h2 id="source-exercise"><a class="header" href="#source-exercise">Source exercise</a></h2>
+<ol>
+<li><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/tools/MCPTool/MCPTool.ts#L27-L75"><code>MCPTool.ts</code></a>에서 <code>Overridden in mcpClient.ts</code> 주석을 모두 찾는다.</li>
+<li>각 override가 discovery, permission, execution, presentation 중 어느 책임인지
+분류한다.</li>
+<li>server 연결 실패가 model에게 정상 <code>tool_result</code>로 전달되는지, host가 임의의
+성공 문자열로 바꾸는지 호출 경로를 따라간다.</li>
+</ol>
+<h2 id="book-sdk에서-같이-보기"><a class="header" href="#book-sdk에서-같이-보기">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK의 MCP, custom tool, permission 장과 연결된다. Notion 운영에는 공식
+Notion MCP처럼 실제 workspace object를 다루는 protocol을 사용하고, Pixel이나
+Education Shell renderer 제어는 실제 renderer observation을 반환하는 direct
+tool boundary를 유지하는 식으로 구분할 수 있다.</p>
+<h2 id="원문"><a class="header" href="#원문">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch15-mcp.md">Chapter 15: MCP — The Universal Tool Protocol</a></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../part5/ch14-input-interaction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../part6/ch16-remote.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../part5/ch14-input-interaction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../part6/ch16-remote.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../mermaid-init.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

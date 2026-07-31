@@ -1,0 +1,312 @@
+<!DOCTYPE HTML>
+<html lang="ko" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>18장: 우리가 배운 것 - Claude Code from Source 한국어 동반판</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="부팅부터 에이전트 루프, 도구, 멀티에이전트와 성능까지 실행 경로로 읽는 한국어판">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../mermaid.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Claude Code from Source 한국어 동반판</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/nfbs2000/speaky-claude-code-from-source" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="18장-우리가-배운-것"><a class="header" href="#18장-우리가-배운-것">18장: 우리가 배운 것</a></h1>
+<h2 id="한-장으로-보는-실행-경계"><a class="header" href="#한-장으로-보는-실행-경계">한 장으로 보는 실행 경계</a></h2>
+<pre><code class="language-mermaid">flowchart TB
+    I["입력·remote command"] --&gt; Q["async generator query loop"]
+    Q --&gt; M["model stream"]
+    Q --&gt; T["self-describing tools"]
+    T --&gt; P["permission·hook·MCP boundary"]
+    T --&gt; S["subagent·fork"]
+    M --&gt; C["context·compaction·memory"]
+    Q --&gt; O["terminal result"]
+    Q --&gt; E["raw event·profile evidence"]
+</code></pre>
+<h2 id="원저자가-정리한-다섯-가지-선택"><a class="header" href="#원저자가-정리한-다섯-가지-선택">원저자가 정리한 다섯 가지 선택</a></h2>
+<h3 id="1-callback-graph보다-generator-loop"><a class="header" href="#1-callback-graph보다-generator-loop">1. Callback graph보다 generator loop</a></h3>
+<p>하나의 async generator가 model stream, tool execution, continuation과 terminal
+상태를 연결한다. 중단 이유는 discriminated union으로 표현해 호출자가 빠짐없이
+처리한다. 복잡성은 크지만 “왜 loop가 끝났는가”를 찾는 경로가 한곳에 남는다.</p>
+<h3 id="2-database보다-파일-기반-memory"><a class="header" href="#2-database보다-파일-기반-memory">2. Database보다 파일 기반 memory</a></h3>
+<p>고급 query보다 사람이 직접 읽고 수정할 수 있는 투명성을 선택한다. LLM recall이
+단순 storage의 검색 한계를 보완한다. 이 선택은 규모가 커질 때 다시 시험받지만,
+agent가 무엇을 기억하는지 외부에서 확인할 수 있게 한다.</p>
+<h3 id="3-중앙-orchestrator보다-self-describing-tool"><a class="header" href="#3-중앙-orchestrator보다-self-describing-tool">3. 중앙 orchestrator보다 self-describing tool</a></h3>
+<p>각 tool이 이름, schema, prompt contribution, concurrency 안전성과 실행을
+자기 계약으로 제공한다. MCP tool도 같은 interface로 wrapping된 뒤 일반 tool
+pipeline에서 permission과 result 처리를 받는다.</p>
+<h3 id="4-fresh-summary보다-fork와-cache-공유"><a class="header" href="#4-fresh-summary보다-fork와-cache-공유">4. Fresh summary보다 fork와 cache 공유</a></h3>
+<p>부모의 byte-identical prefix를 공유하는 fork는 작은 검증 작업도 경제적으로
+분리한다. 그 대신 fork lifecycle, 재귀 방지와 cache 안정성을 엄격히 관리해야
+한다.</p>
+<h3 id="5-in-process-plugin보다-hook-process"><a class="header" href="#5-in-process-plugin보다-hook-process">5. In-process plugin보다 hook process</a></h3>
+<p>외부 process의 시작 비용을 감수하고 crash, memory와 trust 경계를 분리한다.
+stdin/stdout/exit code라는 단순 protocol은 host API보다 오래 유지될 수 있다.</p>
+<h2 id="무엇이-일반화되고-무엇이-규모-의존적인가"><a class="header" href="#무엇이-일반화되고-무엇이-규모-의존적인가">무엇이 일반화되고 무엇이 규모 의존적인가</a></h2>
+<p>generator loop, 파일 memory와 provenance, 비대칭 remote channel, prompt cache
+안정성, self-describing tool은 작은 agent에도 적용할 수 있다. 반면 fork한
+terminal renderer, 수십 개 startup checkpoint, 여덟 종류 MCP transport는
+Claude Code의 규모와 배포 환경 때문에 필요한 선택이다.</p>
+<p>원저자는 파일 수 자체보다 복잡성이 모이는 boundary를 보라고 한다. raw keyboard
+byte를 typed action으로, MCP JSON-RPC를 tool로, hook exit code를 permission
+decision으로 바꾸는 경계가 외부의 혼란을 흡수한다.</p>
+<h2 id="book-sdk-강좌가-가져갈-결론"><a class="header" href="#book-sdk-강좌가-가져갈-결론">Book SDK 강좌가 가져갈 결론</a></h2>
+<p>강좌는 이 구현을 Claude SDK의 공식 계약으로 오해해서는 안 된다. 이 책은 특정
+Claude Code source snapshot을 읽어 실행 구조를 해석한 저자의 관점이다. Book
+SDK는 공식 SDK에서 실제로 관측한 event와 API 계약을 중심에 두고, 이 원저자의
+분석을 “왜 이런 event와 경계가 필요한가”를 이해하는 외부 지도처럼 연결한다.</p>
+<p>학생에게는 다음 세 층을 함께 보여 주는 것이 정직하다.</p>
+<ol>
+<li>공식 SDK와 문서가 보장하는 계약</li>
+<li>실제 Education Shell session에서 저장한 raw evidence</li>
+<li>원저자가 source를 읽고 제시한 실행 구조와 설계 해석</li>
+</ol>
+<p>세 층이 일치할 때는 강한 설명이 되고, 다를 때는 그 차이 자체가 학습 자료다.</p>
+<h2 id="실제-source-종료-이유를-반환하는-generator"><a class="header" href="#실제-source-종료-이유를-반환하는-generator">실제 source: 종료 이유를 반환하는 generator</a></h2>
+<pre><code class="language-typescript">export async function* query(
+  params: QueryParams,
+): AsyncGenerator&lt;StreamEvent | RequestStartEvent | Message, Terminal&gt; {
+  const consumedCommandUuids: string[] = []
+  const terminal = yield* queryLoop(params, consumedCommandUuids)
+  for (const uuid of consumedCommandUuids) {
+    notifyCommandLifecycle(uuid, 'completed')
+  }
+  return terminal
+}
+</code></pre>
+<p>실제 union에는 tombstone과 tool summary도 포함된다. 핵심은
+<a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query.ts#L219-L248"><code>query()</code></a>가 stream 값을 <code>yield</code>하면서도 마지막에 <code>Terminal</code>을
+반환한다는 점이다. UI가 마지막 delta를 보았다는 사실과 run이 어떤 이유로
+종료됐다는 사실은 같은 신호가 아니다.</p>
+<h2 id="독자가-직접-검증할-것"><a class="header" href="#독자가-직접-검증할-것">독자가 직접 검증할 것</a></h2>
+<ul>
+<li><code>queryLoop()</code>의 모든 <code>continue</code>와 <code>return</code>이 어떤 transition/terminal을 남기는가?</li>
+<li>tool result는 다음 model iteration의 message에 어떻게 들어가는가?</li>
+<li>SDK에서 관측한 event만으로 source 내부 최적화를 증명할 수 있는가?</li>
+<li>다이어그램이 실제 source보다 더 강한 존재론을 주장하고 있지 않은가?</li>
+</ul>
+<h2 id="원문"><a class="header" href="#원문">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch18-epilogue.md">Chapter 18: What We Learned</a></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../part7/ch17-performance.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../attribution.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../part7/ch17-performance.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../attribution.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../mermaid-init.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

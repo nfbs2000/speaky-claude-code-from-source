@@ -1,0 +1,445 @@
+<!DOCTYPE HTML>
+<html lang="ko" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>5장: 에이전트 루프 - Claude Code from Source 한국어 동반판</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="부팅부터 에이전트 루프, 도구, 멀티에이전트와 성능까지 실행 경로로 읽는 한국어판">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../mermaid.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Claude Code from Source 한국어 동반판</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/nfbs2000/speaky-claude-code-from-source" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="5장-에이전트-루프"><a class="header" href="#5장-에이전트-루프">5장: 에이전트 루프</a></h1>
+<h2 id="이-장의-질문"><a class="header" href="#이-장의-질문">이 장의 질문</a></h2>
+<p>모델 API를 한 번 호출하는 것과 에이전트를 실행하는 것은 무엇이 다른가?
+Claude Code가 text, tool call, tool result, retry, compaction과 중단을 하나의
+실행으로 묶는 중심은 <code>query()</code>다. 이 장의 목표는 “반복 호출한다”는 요약을
+넘어, 실제 source에서 loop가 어떻게 message와 terminal reason을 함께 전달하는지
+읽는 것이다.</p>
+<h2 id="api-호출이-에이전트가-되는-순간"><a class="header" href="#api-호출이-에이전트가-되는-순간">API 호출이 에이전트가 되는 순간</a></h2>
+<p>API client는 요청을 보내고 stream을 돌려준다. 에이전트 loop는 그 stream에서
+tool call을 찾아 실제로 실행하고, 결과를 다음 model 요청의 message로 붙인다.
+모델이 더 이상 tool을 요청하지 않거나 명시적인 terminal 조건이 생길 때까지
+같은 경로가 반복된다.</p>
+<pre><code class="language-mermaid">flowchart LR
+    U["사용자 입력"] --&gt; C["Context 조립"]
+    C --&gt; M["Model stream"]
+    M --&gt; D{"Tool use가 있는가?"}
+    D -- "예" --&gt; P["Permission 검사"]
+    P --&gt; T["Tool 실행"]
+    T --&gt; O["실제 tool_result 추가"]
+    O --&gt; C
+    D -- "아니오" --&gt; H["Stop hook·종료 조건"]
+    H --&gt; R{"계속해야 하는가?"}
+    R -- "재시도·복구" --&gt; C
+    R -- "완료·중단·실패" --&gt; E["Typed Terminal 반환"]
+</code></pre>
+<p>이 diagram은 SDK raw event가 아니다. source의 control flow를 교육용으로
+재구성한 그림이다. 실제 SDK에서는 assistant message, tool use/result,
+result와 error처럼 더 낮은 수준의 event를 관측한다.</p>
+<h2 id="실제-source-message를-yield하고-종료-이유를-return한다"><a class="header" href="#실제-source-message를-yield하고-종료-이유를-return한다">실제 source: message를 yield하고 종료 이유를 return한다</a></h2>
+<p>다음은 snapshot의 <code>query()</code> 핵심이다. 바깥 generator는 내부 loop의 모든
+message를 <code>yield*</code>로 전달하면서 마지막 <code>Terminal</code>도 그대로 받는다.</p>
+<pre><code class="language-typescript">export async function* query(
+  params: QueryParams,
+): AsyncGenerator&lt;StreamEvent | Message, Terminal&gt; {
+  const consumedCommandUuids: string[] = []
+  const terminal = yield* queryLoop(params, consumedCommandUuids)
+  for (const uuid of consumedCommandUuids) {
+    notifyCommandLifecycle(uuid, 'completed')
+  }
+  return terminal
+}
+</code></pre>
+<p>실제 타입에는 <code>RequestStartEvent</code>, <code>TombstoneMessage</code>,
+<code>ToolUseSummaryMessage</code>도 포함된다. 여기서는 control flow를 읽는 데 필요한
+부분만 남겼다. 전체 코드는 <a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query.ts#L219-L235"><code>src/query.ts</code> 219~235행</a>에서 확인한다.</p>
+<p>이 signature가 중요한 이유는 두 가지다.</p>
+<ol>
+<li>호출자는 stream 중간의 message를 소비할 수 있다.</li>
+<li>loop가 끝났을 때 “끝났다”가 아니라 어떤 terminal reason으로 끝났는지 받는다.</li>
+</ol>
+<p>Event emitter라면 producer가 consumer 속도와 관계없이 event를 밀어낸다.
+Async generator는 consumer가 다음 값을 요청할 때 진행하므로 자연스러운
+backpressure를 제공한다. SDK consumer가 tool progress를 처리하는 동안 loop도
+그 경계를 존중할 수 있다.</p>
+<h2 id="두-겹의-진입점"><a class="header" href="#두-겹의-진입점">두 겹의 진입점</a></h2>
+<p>바깥 <code>query()</code>는 command lifecycle을 마무리한다. 실제 반복은 <code>queryLoop()</code>가
+담당한다. loop가 정상 return했을 때만 소비한 command를 <code>completed</code>로 표시한다.
+예외가 발생하거나 consumer가 generator를 <code>.return()</code>으로 닫으면 완료 알림
+구간에 도달하지 않는다.</p>
+<pre><code class="language-mermaid">flowchart LR
+    A["Client surfaces"] --&gt; B["Query generator"]
+    B --&gt; C["Agent loop"]
+    C --&gt; D["Model stream"]
+    D --&gt; E["Tool call"]
+    E --&gt; F["Permission and execution"]
+    F --&gt; G["Tool result"]
+    G --&gt; C
+    D --&gt; H["Final assistant"]
+    H --&gt; I["Terminal"]
+    I --&gt; A
+</code></pre>
+<h2 id="loop-state를-완전히-다시-만든다"><a class="header" href="#loop-state를-완전히-다시-만든다">Loop state를 완전히 다시 만든다</a></h2>
+<p>source는 반복 사이에 다음 상태를 들고 간다.</p>
+<pre><code class="language-typescript">type State = {
+  messages: Message[]
+  toolUseContext: ToolUseContext
+  autoCompactTracking: AutoCompactTrackingState | undefined
+  maxOutputTokensRecoveryCount: number
+  hasAttemptedReactiveCompact: boolean
+  pendingToolUseSummary: Promise&lt;ToolUseSummaryMessage | null&gt; | undefined
+  stopHookActive: boolean | undefined
+  turnCount: number
+  transition: Continue | undefined
+}
+</code></pre>
+<p>전체 정의는 <a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query.ts#L204-L217"><code>src/query.ts</code> 204~217행</a>에 있다. 각 <code>continue</code>
+지점은 일부 field만 몰래 수정하지 않고 다음 <code>State</code>를 완성해 대입한다.
+<code>transition</code>에는 왜 다음 iteration으로 가는지가 남는다.</p>
+<p>이 방식은 state machine library를 추가했다는 뜻이 아니다. 하나의 명시적 loop
+안에서 transition reason을 typed data로 남기는 방식이다. 다음 turn, fallback,
+reactive compact, stop hook retry가 모두 같은 <code>continue</code>로 보이더라도
+<code>transition.reason</code>으로 구분할 수 있다.</p>
+<h2 id="한-iteration의-실제-순서"><a class="header" href="#한-iteration의-실제-순서">한 iteration의 실제 순서</a></h2>
+<pre><code class="language-mermaid">stateDiagram-v2
+    [*] --&gt; ContextPipeline
+    ContextPipeline --&gt; ModelStreaming: messages 준비
+    ModelStreaming --&gt; ErrorHandling: exception
+    ErrorHandling --&gt; ContextPipeline: 복구 가능한 retry
+    ErrorHandling --&gt; Failed: 복구 불가
+    ModelStreaming --&gt; PostStream: stream 완료
+    PostStream --&gt; ToolExecution: tool_use 존재
+    ToolExecution --&gt; ContextPipeline: 결과 append
+    PostStream --&gt; DoneCheck: tool_use 없음
+    DoneCheck --&gt; ContextPipeline: compact·stop hook retry
+    DoneCheck --&gt; Completed: 정상 완료
+    ToolExecution --&gt; Aborted: 사용자·hook 중단
+</code></pre>
+<h3 id="1-context-pipeline"><a class="header" href="#1-context-pipeline">1. Context pipeline</a></h3>
+<p>이전 message를 그대로 보내지 않는다. tool result budget을 적용하고, 오래된
+정보를 줄이며, 현재 session에 필요한 attachment와 memory를 결합한다.</p>
+<h3 id="2-model-streaming"><a class="header" href="#2-model-streaming">2. Model streaming</a></h3>
+<p>model과 tool schema를 선택하고 stream을 읽는다. 완성된 <code>tool_use</code>가 도착하면
+설정에 따라 전체 assistant 응답이 끝나기 전에 안전한 tool을 시작할 수도 있다.</p>
+<h3 id="3-post-stream-판단"><a class="header" href="#3-post-stream-판단">3. Post-stream 판단</a></h3>
+<p>tool call이 있으면 실행 결과를 message에 붙이고 다음 iteration으로 간다.
+없으면 API error, stop hook, max-turn, abort와 정상 완료를 구분한다.</p>
+<h2 id="context-압축은-한-번의-요약이-아니다"><a class="header" href="#context-압축은-한-번의-요약이-아니다">Context 압축은 한 번의 요약이 아니다</a></h2>
+<p>원저자는 압축을 가벼운 손실부터 무거운 손실 순으로 설명한다.</p>
+<pre><code class="language-mermaid">flowchart TD
+    A["Raw messages"] --&gt; B["Tool result budget"]
+    B --&gt; C["Snip compact"]
+    C --&gt; D["Microcompact"]
+    D --&gt; E["Context collapse"]
+    E --&gt; F["Auto-compact"]
+    F --&gt; G["API에 보낼 messages"]
+</code></pre>
+<div class="table-wrapper"><table><thead><tr><th>단계</th><th>하는 일</th><th>잃을 수 있는 것</th></tr></thead><tbody>
+<tr><td>Tool result budget</td><td>개별 결과 크기를 제한한다</td><td>긴 stdout·파일 내용 일부</td></tr>
+<tr><td>Snip</td><td>오래된 message를 물리적으로 제거한다</td><td>과거의 세부 문맥</td></tr>
+<tr><td>Microcompact</td><td>불필요한 tool result를 ID 단위로 제거한다</td><td>중간 관찰 결과</td></tr>
+<tr><td>Context collapse</td><td>일정 구간을 summary로 교체한다</td><td>원문 표현과 세부 순서</td></tr>
+<tr><td>Auto-compact</td><td>전체 대화를 별도 conversation으로 요약한다</td><td>가장 큰 정보 손실</td></tr>
+</tbody></table>
+</div>
+<p>그러므로 prompt에 “compact하라”고 썼다는 사실은 compaction을 관측했다는
+증거가 아니다. 실제 SDK event, usage 변화, compact boundary와 저장된
+normalized event를 확인해야 한다.</p>
+<h2 id="복구-가능한-오류를-왜-즉시-내보내지-않는가"><a class="header" href="#복구-가능한-오류를-왜-즉시-내보내지-않는가">복구 가능한 오류를 왜 즉시 내보내지 않는가</a></h2>
+<p>일부 SDK consumer는 <code>error</code> field가 있는 assistant message를 받으면 session을
+종료한다. prompt-too-long을 먼저 내보낸 뒤 reactive compact에 성공해도
+consumer는 이미 연결을 끊었을 수 있다.</p>
+<p>그래서 loop는 복구 가능한 intermediate error를 내부 assistant message에는
+남기되 yield stream에서는 잠시 보류한다. 모든 복구 경로가 실패했을 때만 최종
+error로 노출한다.</p>
+<pre><code class="language-mermaid">flowchart TD
+    E["Error 감지"] --&gt; W["Yield 보류"]
+    W --&gt; P{"Prompt too long?"}
+    P -- "예" --&gt; C["Context collapse"]
+    C --&gt; RC{"여전히 초과?"}
+    RC -- "예" --&gt; R["Reactive compact 1회"]
+    R --&gt; Q{"복구 성공?"}
+    Q -- "예" --&gt; N["다음 model 요청"]
+    Q -- "아니오" --&gt; S["실제 error 노출"]
+    P -- "아니오" --&gt; M{"Max output tokens?"}
+    M -- "예" --&gt; X["출력 한도 상향·최대 3회"]
+    X --&gt; Q
+    M -- "아니오" --&gt; S
+</code></pre>
+<p>실제 source에는 <code>MAX_OUTPUT_TOKENS_RECOVERY_LIMIT = 3</code>과
+<code>hasAttemptedReactiveCompact</code>가 있다. 자동 복구에는 반드시 상한이 있어야
+한다. 그렇지 않으면 context를 줄이지 못한 session이 API 호출을 무한 반복할
+수 있다.</p>
+<h2 id="sdk에서-관측되는-것과-source에서만-보이는-것"><a class="header" href="#sdk에서-관측되는-것과-source에서만-보이는-것">SDK에서 관측되는 것과 source에서만 보이는 것</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>항목</th><th>Claude Agent SDK에서 관측</th><th>source를 읽어야 알 수 있음</th></tr></thead><tbody>
+<tr><td>assistant text</td><td>assistant message로 관측</td><td>내부 generator 분기</td></tr>
+<tr><td>tool call/result</td><td>tool use/result block으로 관측</td><td>streaming admission과 batch 구성</td></tr>
+<tr><td>token usage</td><td>result usage에서 관측</td><td>threshold와 recovery counter</td></tr>
+<tr><td>error</td><td>최종 노출 error는 관측</td><td>보류된 intermediate error와 retry ladder</td></tr>
+<tr><td>compaction</td><td>boundary·usage가 있을 때 일부 관측</td><td>snip/microcompact/collapse의 내부 우선순위</td></tr>
+<tr><td>종료</td><td>result subtype과 error로 관측</td><td><code>Terminal</code> discriminated union 전체</td></tr>
+</tbody></table>
+</div>
+<p>강의에서는 오른쪽 열을 raw SDK evidence인 것처럼 표현하면 안 된다. source
+설명과 관측 evidence가 만나는 지점을 따로 표시해야 한다.</p>
+<h2 id="직접-따라가는-source-실습"><a class="header" href="#직접-따라가는-source-실습">직접 따라가는 source 실습</a></h2>
+<ol>
+<li><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query.ts#L219-L235"><code>query()</code> 진입점</a>에서 <code>yield* queryLoop</code>를 찾는다.</li>
+<li>같은 파일에서 <code>transition:</code>을 검색해 모든 continue reason을 적는다.</li>
+<li><code>runTools(</code>와 <code>StreamingToolExecutor</code>를 검색해 batch 경로와 streaming
+경로가 만나는 위치를 찾는다.</li>
+<li><code>isWithheldMaxOutputTokens</code>를 찾아 어떤 message만 보류하는지 확인한다.</li>
+<li>Education Shell의 실제 Claude SDK trace에서 대응 가능한 assistant,
+tool use/result, result event만 표시한다.</li>
+</ol>
+<h2 id="확인-질문"><a class="header" href="#확인-질문">확인 질문</a></h2>
+<ul>
+<li>Generator가 event emitter보다 agent loop에 유리한 이유는 무엇인가?</li>
+<li><code>Terminal</code>과 assistant final text는 왜 같은 것이 아닌가?</li>
+<li>Intermediate error를 숨기는 것과 실행 진실을 조작하는 것은 어떻게 다른가?</li>
+<li>Auto-compact 실패 횟수에 상한이 없으면 어떤 비용 문제가 생기는가?</li>
+<li>source의 <code>transition.reason</code>을 SDK raw event에서 직접 볼 수 있는가?</li>
+</ul>
+<h2 id="핵심-정리"><a class="header" href="#핵심-정리">핵심 정리</a></h2>
+<ul>
+<li>에이전트는 model 호출이 아니라 observation을 다시 model에 돌려주는 loop다.</li>
+<li><code>query()</code>는 stream message를 yield하고 종료 이유를 typed value로 return한다.</li>
+<li>각 iteration은 context, model stream, tool 실행, post-stream 판단으로 구성된다.</li>
+<li>압축은 손실 크기가 다른 여러 계층이며 실제 event로 관측해야 한다.</li>
+<li>복구 가능한 error는 consumer를 성급히 종료시키지 않도록 보류하지만, 최종
+실패는 원래 error로 노출한다.</li>
+<li>모든 retry, compaction과 background action에는 circuit breaker가 필요하다.</li>
+</ul>
+<h2 id="원문과-실제-source"><a class="header" href="#원문과-실제-source">원문과 실제 source</a></h2>
+<ul>
+<li><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch05-agent-loop.md">원저자 Chapter 5: The Agent Loop</a></li>
+<li><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query.ts#L219-L235">실제 <code>query()</code> source</a></li>
+<li><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query.ts#L204-L217">실제 loop <code>State</code> source</a></li>
+<li><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query/transitions.ts"><code>Terminal</code>과 <code>Continue</code> 타입</a></li>
+<li><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/services/tools/StreamingToolExecutor.ts"><code>StreamingToolExecutor</code></a></li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../part1/ch04-api-layer.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../part2/ch06-tools.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../part1/ch04-api-layer.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../part2/ch06-tools.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../mermaid-init.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

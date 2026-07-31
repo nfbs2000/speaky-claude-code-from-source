@@ -1,0 +1,1682 @@
+<!DOCTYPE HTML>
+<html lang="ko" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Claude Code from Source 한국어 동반판</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="부팅부터 에이전트 루프, 도구, 멀티에이전트와 성능까지 실행 경로로 읽는 한국어판">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="mermaid.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Claude Code from Source 한국어 동반판</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/nfbs2000/speaky-claude-code-from-source" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="한국어판을-읽는-법"><a class="header" href="#한국어판을-읽는-법">한국어판을 읽는 법</a></h1>
+<p>이 책은 <a href="https://github.com/alejandrobalderas/claude-code-from-source">Claude Code from Source</a>의 7부 18장 구조를 그대로 따라가는
+한국어 동반판이다. 원저자는 source map에서 확인한 대규모 TypeScript 구조를
+분석한 뒤, 원본 소스 한 줄도 싣지 않고 독립적인 의사코드와 기술 서사로
+재구성했다.</p>
+<p>이 책의 시각은 기능 사전이 아니다. 다음 실행 경로를 처음부터 끝까지 따라간다.</p>
+<pre><code class="language-text">프로세스 부팅
+  -&gt; 상태와 API
+  -&gt; 에이전트 루프
+  -&gt; 도구와 권한
+  -&gt; 동시 실행
+  -&gt; 서브에이전트와 조정
+  -&gt; 메모리와 확장
+  -&gt; UI와 입력
+  -&gt; MCP와 원격 실행
+  -&gt; 성능과 설계 원칙
+</code></pre>
+<p>각 장은 원문의 핵심 논지와 <code>Apply This</code>를 한국어로 옮기고, 원문 장으로 직접
+이동하는 링크를 제공한다. 세부 수치와 구현 설명은 고정 commit
+<code>a6d5e452a8e0dd925c22c407c84611b1994562eb</code>의 원문을 기준으로 한다.</p>
+<p>Claude Agent SDK 강좌는 공개 이벤트에서 무엇을 관찰할 수 있는지 묻는다.
+이 책은 그보다 안쪽의 구현을 하나의 실행 경로와 재사용 가능한 설계 패턴으로
+읽는다. 두 자료는 경쟁하지 않는다. 서로 다른 층을 설명한다.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="1장-ai-에이전트의-아키텍처"><a class="header" href="#1장-ai-에이전트의-아키텍처">1장: AI 에이전트의 아키텍처</a></h1>
+<h2 id="원저자의-관점"><a class="header" href="#원저자의-관점">원저자의 관점</a></h2>
+<p>전통적인 CLI는 명령 하나를 수행하고 종료한다. 에이전트 CLI는 자연어 목표를
+받아 도구와 순서를 스스로 선택하고, 결과를 관찰한 뒤 다시 행동한다. 원저자는
+이 차이를 “모델의 추론이 제어 흐름이 되고 도구 호출이 부작용이 된다”고 표현한다.</p>
+<h2 id="여섯-핵심-추상화"><a class="header" href="#여섯-핵심-추상화">여섯 핵심 추상화</a></h2>
+<ol>
+<li><code>query()</code> async generator가 모든 대화의 심장이다.</li>
+<li>Tool은 schema, 권한, 동시성, 실행과 렌더링을 스스로 설명한다.</li>
+<li>Task는 같은 루프를 재귀적으로 실행하는 작업 단위다.</li>
+<li>상태는 process singleton과 reactive UI store로 나뉜다.</li>
+<li>Memory는 세션 밖의 지식을 파일로 유지한다.</li>
+<li>Hook은 수명 주기의 27개 지점에서 실행을 관찰하거나 막는다.</li>
+</ol>
+<p>사용자 키 입력은 REPL, query loop, 모델 stream, tool pipeline, permission
+resolver를 지나 다시 메시지로 돌아온다. CLI, SDK와 서브에이전트도 같은 루프를
+사용한다.</p>
+<h2 id="전체-실행-구조"><a class="header" href="#전체-실행-구조">전체 실행 구조</a></h2>
+<pre><code class="language-mermaid">flowchart TB
+    UI["REPL · SDK · Headless"] --&gt; Q["query() async generator"]
+    Q --&gt; API["API streaming layer"]
+    API --&gt; MODEL["Claude model"]
+    MODEL --&gt; Q
+    Q --&gt; PERM["Permission resolver"]
+    PERM --&gt; TOOLS["Self-describing tools"]
+    TOOLS --&gt; OBS["tool_result observation"]
+    OBS --&gt; Q
+    Q --&gt; STATE["Process STATE · AppState"]
+    Q --&gt; MEMORY["Memory · Session"]
+    Q --&gt; HOOKS["Lifecycle hooks"]
+</code></pre>
+<p>이 그림의 중심은 UI나 model이 아니라 <code>query()</code>다. UI는 message를 소비하고,
+model은 다음 action을 제안하며, tool은 side effect를 수행한다. 어느 계층도
+다른 계층의 실패를 성공으로 바꿀 권한은 없다.</p>
+<h2 id="실제-source-핵심-코드"><a class="header" href="#실제-source-핵심-코드">실제 source 핵심 코드</a></h2>
+<pre><code class="language-typescript">export async function* query(
+  params: QueryParams,
+): AsyncGenerator&lt;StreamEvent | Message, Terminal&gt; {
+  const terminal = yield* queryLoop(params, [])
+  return terminal
+}
+</code></pre>
+<p>실제 union과 command lifecycle을 포함한 전체 signature는
+<a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query.ts#L219-L235"><code>src/query.ts</code> 219~235행</a>에서 확인한다. architecture를 읽을 때
+“모든 요청이 정말 이 함수로 들어오는가?”를 caller별로 역추적하는 것이 첫
+실습이다.</p>
+<h2 id="관측과-해석"><a class="header" href="#관측과-해석">관측과 해석</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>구분</th><th>확인할 수 있는 것</th></tr></thead><tbody>
+<tr><td>SDK 관측</td><td>assistant, tool use/result, usage, result와 error</td></tr>
+<tr><td>source 해석</td><td>generator transition, store 분리, hook 호출 순서</td></tr>
+<tr><td>확인 불가</td><td>source에 존재한다는 이유만으로 현재 build에서 활성화됐다는 주장</td></tr>
+</tbody></table>
+</div>
+<h2 id="가져갈-패턴"><a class="header" href="#가져갈-패턴">가져갈 패턴</a></h2>
+<ul>
+<li>callback graph보다 종료 이유가 타입으로 보이는 generator loop</li>
+<li>중앙 orchestrator 대신 자기 설명적인 tool</li>
+<li>접근 패턴에 따른 인프라 상태와 반응형 상태의 분리</li>
+<li>도구별 임시 분기 대신 named permission mode</li>
+<li>하위 실행을 별도 구현하지 않고 같은 loop의 재귀로 표현</li>
+</ul>
+<h2 id="book-sdk에서-같이-보기"><a class="header" href="#book-sdk에서-같이-보기">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK 1장 전체 스택, 3장 에이전트 루프, 20장 에이전트 생성과 함께 읽는다.</p>
+<h2 id="원문"><a class="header" href="#원문">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch01-architecture.md">Chapter 1: The Architecture of an AI Agent</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="2장-빠르게-시작하기--부트스트랩-파이프라인"><a class="header" href="#2장-빠르게-시작하기--부트스트랩-파이프라인">2장: 빠르게 시작하기 — 부트스트랩 파이프라인</a></h1>
+<h2 id="원저자의-관점-1"><a class="header" href="#원저자의-관점-1">원저자의 관점</a></h2>
+<p>에이전트가 생각하기 전에 프로세스가 안전하고 빠르게 존재해야 한다. Claude Code
+부팅은 fast-path dispatch, module I/O, parse와 trust, setup, REPL launch의
+다섯 단계 funnel이다.</p>
+<h2 id="실행-경로"><a class="header" href="#실행-경로">실행 경로</a></h2>
+<ul>
+<li><code>cli.tsx</code>는 MCP나 특수 명령처럼 REPL 전체가 필요 없는 경로를 먼저 보낸다.</li>
+<li><code>main.tsx</code>는 keychain, MDM과 네트워크 I/O를 import 작업과 겹쳐 실행한다.</li>
+<li><code>init.ts</code>는 환경을 읽는 시점과 사용자가 저장소를 신뢰한 이후를 구분한다.</li>
+<li><code>setup.ts</code>는 설정과 migration을 idempotent하게 적용한다.</li>
+<li><code>replLauncher.ts</code>가 초기 prompt를 잃지 않고 UI와 loop를 연결한다.</li>
+</ul>
+<h2 id="부팅-funnel"><a class="header" href="#부팅-funnel">부팅 funnel</a></h2>
+<pre><code class="language-mermaid">flowchart LR
+    A["argv 캡처"] --&gt; B{"Fast path인가?"}
+    B -- "MCP·특수 명령" --&gt; F["필요한 handler만 load"]
+    B -- "일반 session" --&gt; C["main() 보안 초기화"]
+    C --&gt; D["설정·trust·migration"]
+    D --&gt; E["AppState와 runtime 조립"]
+    E --&gt; R["REPL · print · SDK 실행"]
+</code></pre>
+<p>부팅은 기능을 많이 준비하는 과정이 아니라, 필요하지 않은 범위를 가능한 빨리
+제외하는 과정이다. 특히 repository를 신뢰하기 전에 project hook이나 실행
+가능한 설정을 평가하면 startup 순서가 곧 권한 상승 경로가 된다.</p>
+<h2 id="실제-source-핵심-코드-1"><a class="header" href="#실제-source-핵심-코드-1">실제 source 핵심 코드</a></h2>
+<pre><code class="language-typescript">export async function main() {
+  profileCheckpoint('main_function_start')
+  process.env.NoDefaultCurrentDirectoryInExePath = '1'
+  initializeWarningHandler()
+  process.on('exit', () =&gt; {
+    resetCursor()
+  })
+}
+</code></pre>
+<p>Windows PATH hijacking 방어가 command 실행보다 먼저 놓여 있다는 점을 본다.
+전체 초기화 순서는 <a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/main.tsx#L585-L615"><code>src/main.tsx</code> 585행부터</a> 따라갈 수 있다.</p>
+<h2 id="직접-확인하기"><a class="header" href="#직접-확인하기">직접 확인하기</a></h2>
+<ol>
+<li><code>src/entrypoints/cli.tsx</code>에서 fast path를 찾는다.</li>
+<li><code>main_function_start</code> 이후 checkpoint 순서를 적는다.</li>
+<li>trust 확인 전에 읽는 설정과 이후에 실행하는 hook을 구분한다.</li>
+<li>startup trace에서 checkpoint가 실제로 기록됐는지 확인한다.</li>
+</ol>
+<h2 id="가져갈-패턴-1"><a class="header" href="#가져갈-패턴-1">가져갈 패턴</a></h2>
+<ul>
+<li>느린 I/O를 모듈 평가와 병렬화한다.</li>
+<li>필요 없는 범위를 가능한 일찍 제거한다.</li>
+<li>신뢰 전 읽을 수 있는 정보와 신뢰 후 실행할 코드를 분리한다.</li>
+<li>init을 memoize해 중복 초기화를 없앤다.</li>
+<li>async setup 전에 초기 사용자 입력을 먼저 캡처한다.</li>
+</ul>
+<p>빠른 부팅은 단순 성능 문제가 아니다. 신뢰 경계보다 먼저 훅과 설정이 실행된다면
+초기화 순서 자체가 보안 문제가 된다.</p>
+<h2 id="book-sdk에서-같이-보기-1"><a class="header" href="#book-sdk에서-같이-보기-1">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK 1장의 startup trace, 17b장의 prompt injection 방어, 23b장의 feature
+gate 생명주기와 연결된다.</p>
+<h2 id="원문-1"><a class="header" href="#원문-1">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch02-bootstrap.md">Chapter 2: Starting Fast — The Bootstrap Pipeline</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="3장-상태--2계층-아키텍처"><a class="header" href="#3장-상태--2계층-아키텍처">3장: 상태 — 2계층 아키텍처</a></h1>
+<h2 id="원저자의-관점-2"><a class="header" href="#원저자의-관점-2">원저자의 관점</a></h2>
+<p>모든 상태를 하나의 reactive store에 넣지 않는다. 읽고 쓰는 패턴이 다른 상태는
+다른 계층에 둔다.</p>
+<h2 id="두-계층"><a class="header" href="#두-계층">두 계층</a></h2>
+<p><code>STATE</code> process singleton은 세션 ID, 모델 설정, 비용, telemetry와 startup
+결과처럼 React보다 먼저 필요하고 자주 읽지만 드물게 바뀌는 필드를 가진다.
+AppState는 메시지, 입력 모드, 승인 queue와 progress처럼 바뀔 때 UI가 다시
+그려져야 하는 상태를 가진다.</p>
+<p>sticky latch는 prompt cache key에 영향을 주는 feature가 한번 켜진 뒤 세션
+중간에 꺼지지 않게 한다. <code>onChangeAppState</code>는 여러 mutation 경로에 side effect를
+흩뿌리지 않고 상태 diff 한 곳에서 알림과 동기화를 실행한다.</p>
+<h2 id="두-수명주기"><a class="header" href="#두-수명주기">두 수명주기</a></h2>
+<pre><code class="language-mermaid">flowchart TB
+    P["Process singleton STATE"] --&gt; P1["session ID · model · cost · telemetry"]
+    A["Reactive AppState"] --&gt; A1["messages · permission queue · progress · view"]
+    P --&gt; SYNC["명시적 동기화 지점"]
+    A --&gt; SYNC
+    SYNC --&gt; EFFECT["persistence · notification · analytics"]
+</code></pre>
+<p>분리 기준은 “model domain”이나 “UI domain” 같은 이름이 아니다. 얼마나 자주
+읽고, 얼마나 자주 바뀌며, 변경 때 누가 다시 계산되어야 하는지가 기준이다.</p>
+<h2 id="실제-source-핵심-코드-2"><a class="header" href="#실제-source-핵심-코드-2">실제 source 핵심 코드</a></h2>
+<pre><code class="language-typescript">export type AppState = DeepImmutable&lt;{
+  settings: SettingsJson
+  mainLoopModel: ModelSetting
+  expandedView: 'none' | 'tasks' | 'teammates'
+  coordinatorTaskIndex: number
+  toolPermissionContext: ToolPermissionContext
+  remoteSessionUrl: string | undefined
+}&gt;
+</code></pre>
+<p>실제 <code>AppState</code>는 훨씬 크며 <a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/state/AppStateStore.ts#L89-L118"><code>AppStateStore.ts</code> 89행부터</a> 확인할
+수 있다. 여기서 중요한 것은 <code>DeepImmutable</code>다. component가 내부 field를
+직접 바꾸지 않고 store transition을 거치게 한다.</p>
+<h2 id="상태를-읽는-질문"><a class="header" href="#상태를-읽는-질문">상태를 읽는 질문</a></h2>
+<ul>
+<li>이 값은 process가 살아 있는 동안 유지되는가, session마다 바뀌는가?</li>
+<li>변경될 때 UI 전체가 다시 그려져야 하는가?</li>
+<li>prompt cache key에 들어가 세션 중 변경이 위험한가?</li>
+<li>persistence 실패 시 실행 truth가 사라지는가, 진단 정보만 사라지는가?</li>
+</ul>
+<h2 id="가져갈-패턴-2"><a class="header" href="#가져갈-패턴-2">가져갈 패턴</a></h2>
+<ul>
+<li>도메인이 아니라 접근 패턴으로 상태를 나눈다.</li>
+<li>cache key를 바꾸는 값에는 한번 활성화되면 유지되는 latch를 쓴다.</li>
+<li>side effect는 mutation 호출부가 아니라 중앙 diff에서 발생시킨다.</li>
+<li><code>get/set/subscribe</code>면 충분할 때 작은 store를 직접 소유한다.</li>
+<li>비정상 종료 시 잃어도 되는 진단 데이터만 process-exit에 저장한다.</li>
+</ul>
+<p>두 계층에 같은 모델 정보가 존재하는 중복은 의도된 비용이다. 중앙 동기화 지점이
+명확하다면 서로의 내부를 import하는 것보다 작은 중복이 낫다.</p>
+<h2 id="book-sdk에서-같이-보기-2"><a class="header" href="#book-sdk에서-같이-보기-2">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK 3장의 메시지 상태, 10장의 파일 상태 보존, 24장의 세션 간 메모리와
+비교한다.</p>
+<h2 id="원문-2"><a class="header" href="#원문-2">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch03-state.md">Chapter 3: State — The Two-Tier Architecture</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="4장-claude와-대화하기--api-계층"><a class="header" href="#4장-claude와-대화하기--api-계층">4장: Claude와 대화하기 — API 계층</a></h1>
+<h2 id="원저자의-관점-3"><a class="header" href="#원저자의-관점-3">원저자의 관점</a></h2>
+<p>API 계층은 SDK client를 한 번 호출하는 얇은 wrapper가 아니다. provider 선택,
+system prompt 조립, raw SSE, watchdog, prompt cache와 오류 escalation이 만나는
+경계다.</p>
+<h2 id="실행-경로-1"><a class="header" href="#실행-경로-1">실행 경로</a></h2>
+<p>multi-provider factory가 인증과 endpoint를 선택하고, 안정적인 prompt prefix 뒤에
+변하는 세션 정보를 둔다. raw SSE를 직접 읽어 tool input delta를 누적하고,
+stream chunk가 끊기면 idle watchdog이 중단과 retry를 시작한다. proxy가 SSE를
+깨뜨리면 제한된 non-streaming fallback을 사용한다.</p>
+<h2 id="캐시가-만드는-아키텍처"><a class="header" href="#캐시가-만드는-아키텍처">캐시가 만드는 아키텍처</a></h2>
+<p>prompt cache는 옵션 하나가 아니다. prompt 섹션 순서, memoization, beta header
+latch와 날짜 고정까지 좌우한다. 안정적인 prefix가 중간 턴에서 바뀌는 것은
+성능상 버그다.</p>
+<h2 id="요청과-stream의-경계"><a class="header" href="#요청과-stream의-경계">요청과 stream의 경계</a></h2>
+<pre><code class="language-mermaid">flowchart LR
+    L["Agent loop"] --&gt; A["Streaming API boundary"]
+    A --&gt; V["Streaming recorder wrapper"]
+    V --&gt; C["Claude API request"]
+    C --&gt; D["Content block deltas"]
+    D --&gt; V
+    V --&gt; E["Stream events and assistant messages"]
+    E --&gt; L
+</code></pre>
+<p>API layer는 tool을 실행하지 않는다. 인증·header·request·stream parsing을
+책임지고, 실행 여부는 loop와 permission/tool layer로 넘긴다.</p>
+<h2 id="실제-source-핵심-코드-3"><a class="header" href="#실제-source-핵심-코드-3">실제 source 핵심 코드</a></h2>
+<pre><code class="language-typescript">export async function* queryModelWithStreaming({
+  messages,
+  systemPrompt,
+  thinkingConfig,
+  tools,
+  signal,
+  options,
+}): AsyncGenerator&lt;StreamEvent | AssistantMessage, void&gt; {
+  return yield* withStreamingVCR(messages, async function* () {
+    yield* queryModel(messages, systemPrompt, thinkingConfig, tools, signal, options)
+  })
+}
+</code></pre>
+<p>실제 error union을 포함한 코드는 <a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/services/api/claude.ts#L752-L775"><code>claude.ts</code> 752~775행</a>에 있다.
+<code>AbortSignal</code>이 API boundary까지 전달되는지, fallback이 같은 message를 어떻게
+정규화하는지 함께 추적한다.</p>
+<h2 id="관측-지점"><a class="header" href="#관측-지점">관측 지점</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>지점</th><th>학생이 확인할 정보</th></tr></thead><tbody>
+<tr><td>request 시작</td><td>provider, model, system/tool schema version</td></tr>
+<tr><td>stream 시작</td><td>first chunk 시간과 request ID</td></tr>
+<tr><td>stream 진행</td><td>assistant delta와 tool input delta</td></tr>
+<tr><td>종료</td><td>usage, stop reason, error와 fallback 여부</td></tr>
+</tbody></table>
+</div>
+<h2 id="가져갈-패턴-3"><a class="header" href="#가져갈-패턴-3">가져갈 패턴</a></h2>
+<ul>
+<li>cache를 나중에 켜는 최적화가 아니라 초기 설계 제약으로 본다.</li>
+<li>비싼 invariant 우회 함수에는 <code>DANGEROUS</code>처럼 눈에 띄는 이름과 이유를 요구한다.</li>
+<li>request timeout 외에 chunk마다 갱신되는 stream watchdog을 둔다.</li>
+<li>retry 상태를 exception에 숨기지 않고 event stream으로 보낸다.</li>
+<li>compaction·분류처럼 단순한 내부 호출에는 별도 fast path를 둔다.</li>
+</ul>
+<h2 id="book-sdk에서-같이-보기-3"><a class="header" href="#book-sdk에서-같이-보기-3">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK 6b장의 API 통신 계층, 13~15장의 prompt cache와 21장의 모델 effort를
+함께 본다.</p>
+<h2 id="원문-3"><a class="header" href="#원문-3">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch04-api-layer.md">Chapter 4: Talking to Claude — The API Layer</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="5장-에이전트-루프"><a class="header" href="#5장-에이전트-루프">5장: 에이전트 루프</a></h1>
+<h2 id="이-장의-질문"><a class="header" href="#이-장의-질문">이 장의 질문</a></h2>
+<p>모델 API를 한 번 호출하는 것과 에이전트를 실행하는 것은 무엇이 다른가?
+Claude Code가 text, tool call, tool result, retry, compaction과 중단을 하나의
+실행으로 묶는 중심은 <code>query()</code>다. 이 장의 목표는 “반복 호출한다”는 요약을
+넘어, 실제 source에서 loop가 어떻게 message와 terminal reason을 함께 전달하는지
+읽는 것이다.</p>
+<h2 id="api-호출이-에이전트가-되는-순간"><a class="header" href="#api-호출이-에이전트가-되는-순간">API 호출이 에이전트가 되는 순간</a></h2>
+<p>API client는 요청을 보내고 stream을 돌려준다. 에이전트 loop는 그 stream에서
+tool call을 찾아 실제로 실행하고, 결과를 다음 model 요청의 message로 붙인다.
+모델이 더 이상 tool을 요청하지 않거나 명시적인 terminal 조건이 생길 때까지
+같은 경로가 반복된다.</p>
+<pre><code class="language-mermaid">flowchart LR
+    U["사용자 입력"] --&gt; C["Context 조립"]
+    C --&gt; M["Model stream"]
+    M --&gt; D{"Tool use가 있는가?"}
+    D -- "예" --&gt; P["Permission 검사"]
+    P --&gt; T["Tool 실행"]
+    T --&gt; O["실제 tool_result 추가"]
+    O --&gt; C
+    D -- "아니오" --&gt; H["Stop hook·종료 조건"]
+    H --&gt; R{"계속해야 하는가?"}
+    R -- "재시도·복구" --&gt; C
+    R -- "완료·중단·실패" --&gt; E["Typed Terminal 반환"]
+</code></pre>
+<p>이 diagram은 SDK raw event가 아니다. source의 control flow를 교육용으로
+재구성한 그림이다. 실제 SDK에서는 assistant message, tool use/result,
+result와 error처럼 더 낮은 수준의 event를 관측한다.</p>
+<h2 id="실제-source-message를-yield하고-종료-이유를-return한다"><a class="header" href="#실제-source-message를-yield하고-종료-이유를-return한다">실제 source: message를 yield하고 종료 이유를 return한다</a></h2>
+<p>다음은 snapshot의 <code>query()</code> 핵심이다. 바깥 generator는 내부 loop의 모든
+message를 <code>yield*</code>로 전달하면서 마지막 <code>Terminal</code>도 그대로 받는다.</p>
+<pre><code class="language-typescript">export async function* query(
+  params: QueryParams,
+): AsyncGenerator&lt;StreamEvent | Message, Terminal&gt; {
+  const consumedCommandUuids: string[] = []
+  const terminal = yield* queryLoop(params, consumedCommandUuids)
+  for (const uuid of consumedCommandUuids) {
+    notifyCommandLifecycle(uuid, 'completed')
+  }
+  return terminal
+}
+</code></pre>
+<p>실제 타입에는 <code>RequestStartEvent</code>, <code>TombstoneMessage</code>,
+<code>ToolUseSummaryMessage</code>도 포함된다. 여기서는 control flow를 읽는 데 필요한
+부분만 남겼다. 전체 코드는 <a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query.ts#L219-L235"><code>src/query.ts</code> 219~235행</a>에서 확인한다.</p>
+<p>이 signature가 중요한 이유는 두 가지다.</p>
+<ol>
+<li>호출자는 stream 중간의 message를 소비할 수 있다.</li>
+<li>loop가 끝났을 때 “끝났다”가 아니라 어떤 terminal reason으로 끝났는지 받는다.</li>
+</ol>
+<p>Event emitter라면 producer가 consumer 속도와 관계없이 event를 밀어낸다.
+Async generator는 consumer가 다음 값을 요청할 때 진행하므로 자연스러운
+backpressure를 제공한다. SDK consumer가 tool progress를 처리하는 동안 loop도
+그 경계를 존중할 수 있다.</p>
+<h2 id="두-겹의-진입점"><a class="header" href="#두-겹의-진입점">두 겹의 진입점</a></h2>
+<p>바깥 <code>query()</code>는 command lifecycle을 마무리한다. 실제 반복은 <code>queryLoop()</code>가
+담당한다. loop가 정상 return했을 때만 소비한 command를 <code>completed</code>로 표시한다.
+예외가 발생하거나 consumer가 generator를 <code>.return()</code>으로 닫으면 완료 알림
+구간에 도달하지 않는다.</p>
+<pre><code class="language-mermaid">flowchart LR
+    A["Client surfaces"] --&gt; B["Query generator"]
+    B --&gt; C["Agent loop"]
+    C --&gt; D["Model stream"]
+    D --&gt; E["Tool call"]
+    E --&gt; F["Permission and execution"]
+    F --&gt; G["Tool result"]
+    G --&gt; C
+    D --&gt; H["Final assistant"]
+    H --&gt; I["Terminal"]
+    I --&gt; A
+</code></pre>
+<h2 id="loop-state를-완전히-다시-만든다"><a class="header" href="#loop-state를-완전히-다시-만든다">Loop state를 완전히 다시 만든다</a></h2>
+<p>source는 반복 사이에 다음 상태를 들고 간다.</p>
+<pre><code class="language-typescript">type State = {
+  messages: Message[]
+  toolUseContext: ToolUseContext
+  autoCompactTracking: AutoCompactTrackingState | undefined
+  maxOutputTokensRecoveryCount: number
+  hasAttemptedReactiveCompact: boolean
+  pendingToolUseSummary: Promise&lt;ToolUseSummaryMessage | null&gt; | undefined
+  stopHookActive: boolean | undefined
+  turnCount: number
+  transition: Continue | undefined
+}
+</code></pre>
+<p>전체 정의는 <a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query.ts#L204-L217"><code>src/query.ts</code> 204~217행</a>에 있다. 각 <code>continue</code>
+지점은 일부 field만 몰래 수정하지 않고 다음 <code>State</code>를 완성해 대입한다.
+<code>transition</code>에는 왜 다음 iteration으로 가는지가 남는다.</p>
+<p>이 방식은 state machine library를 추가했다는 뜻이 아니다. 하나의 명시적 loop
+안에서 transition reason을 typed data로 남기는 방식이다. 다음 turn, fallback,
+reactive compact, stop hook retry가 모두 같은 <code>continue</code>로 보이더라도
+<code>transition.reason</code>으로 구분할 수 있다.</p>
+<h2 id="한-iteration의-실제-순서"><a class="header" href="#한-iteration의-실제-순서">한 iteration의 실제 순서</a></h2>
+<pre><code class="language-mermaid">stateDiagram-v2
+    [*] --&gt; ContextPipeline
+    ContextPipeline --&gt; ModelStreaming: messages 준비
+    ModelStreaming --&gt; ErrorHandling: exception
+    ErrorHandling --&gt; ContextPipeline: 복구 가능한 retry
+    ErrorHandling --&gt; Failed: 복구 불가
+    ModelStreaming --&gt; PostStream: stream 완료
+    PostStream --&gt; ToolExecution: tool_use 존재
+    ToolExecution --&gt; ContextPipeline: 결과 append
+    PostStream --&gt; DoneCheck: tool_use 없음
+    DoneCheck --&gt; ContextPipeline: compact·stop hook retry
+    DoneCheck --&gt; Completed: 정상 완료
+    ToolExecution --&gt; Aborted: 사용자·hook 중단
+</code></pre>
+<h3 id="1-context-pipeline"><a class="header" href="#1-context-pipeline">1. Context pipeline</a></h3>
+<p>이전 message를 그대로 보내지 않는다. tool result budget을 적용하고, 오래된
+정보를 줄이며, 현재 session에 필요한 attachment와 memory를 결합한다.</p>
+<h3 id="2-model-streaming"><a class="header" href="#2-model-streaming">2. Model streaming</a></h3>
+<p>model과 tool schema를 선택하고 stream을 읽는다. 완성된 <code>tool_use</code>가 도착하면
+설정에 따라 전체 assistant 응답이 끝나기 전에 안전한 tool을 시작할 수도 있다.</p>
+<h3 id="3-post-stream-판단"><a class="header" href="#3-post-stream-판단">3. Post-stream 판단</a></h3>
+<p>tool call이 있으면 실행 결과를 message에 붙이고 다음 iteration으로 간다.
+없으면 API error, stop hook, max-turn, abort와 정상 완료를 구분한다.</p>
+<h2 id="context-압축은-한-번의-요약이-아니다"><a class="header" href="#context-압축은-한-번의-요약이-아니다">Context 압축은 한 번의 요약이 아니다</a></h2>
+<p>원저자는 압축을 가벼운 손실부터 무거운 손실 순으로 설명한다.</p>
+<pre><code class="language-mermaid">flowchart TD
+    A["Raw messages"] --&gt; B["Tool result budget"]
+    B --&gt; C["Snip compact"]
+    C --&gt; D["Microcompact"]
+    D --&gt; E["Context collapse"]
+    E --&gt; F["Auto-compact"]
+    F --&gt; G["API에 보낼 messages"]
+</code></pre>
+<div class="table-wrapper"><table><thead><tr><th>단계</th><th>하는 일</th><th>잃을 수 있는 것</th></tr></thead><tbody>
+<tr><td>Tool result budget</td><td>개별 결과 크기를 제한한다</td><td>긴 stdout·파일 내용 일부</td></tr>
+<tr><td>Snip</td><td>오래된 message를 물리적으로 제거한다</td><td>과거의 세부 문맥</td></tr>
+<tr><td>Microcompact</td><td>불필요한 tool result를 ID 단위로 제거한다</td><td>중간 관찰 결과</td></tr>
+<tr><td>Context collapse</td><td>일정 구간을 summary로 교체한다</td><td>원문 표현과 세부 순서</td></tr>
+<tr><td>Auto-compact</td><td>전체 대화를 별도 conversation으로 요약한다</td><td>가장 큰 정보 손실</td></tr>
+</tbody></table>
+</div>
+<p>그러므로 prompt에 “compact하라”고 썼다는 사실은 compaction을 관측했다는
+증거가 아니다. 실제 SDK event, usage 변화, compact boundary와 저장된
+normalized event를 확인해야 한다.</p>
+<h2 id="복구-가능한-오류를-왜-즉시-내보내지-않는가"><a class="header" href="#복구-가능한-오류를-왜-즉시-내보내지-않는가">복구 가능한 오류를 왜 즉시 내보내지 않는가</a></h2>
+<p>일부 SDK consumer는 <code>error</code> field가 있는 assistant message를 받으면 session을
+종료한다. prompt-too-long을 먼저 내보낸 뒤 reactive compact에 성공해도
+consumer는 이미 연결을 끊었을 수 있다.</p>
+<p>그래서 loop는 복구 가능한 intermediate error를 내부 assistant message에는
+남기되 yield stream에서는 잠시 보류한다. 모든 복구 경로가 실패했을 때만 최종
+error로 노출한다.</p>
+<pre><code class="language-mermaid">flowchart TD
+    E["Error 감지"] --&gt; W["Yield 보류"]
+    W --&gt; P{"Prompt too long?"}
+    P -- "예" --&gt; C["Context collapse"]
+    C --&gt; RC{"여전히 초과?"}
+    RC -- "예" --&gt; R["Reactive compact 1회"]
+    R --&gt; Q{"복구 성공?"}
+    Q -- "예" --&gt; N["다음 model 요청"]
+    Q -- "아니오" --&gt; S["실제 error 노출"]
+    P -- "아니오" --&gt; M{"Max output tokens?"}
+    M -- "예" --&gt; X["출력 한도 상향·최대 3회"]
+    X --&gt; Q
+    M -- "아니오" --&gt; S
+</code></pre>
+<p>실제 source에는 <code>MAX_OUTPUT_TOKENS_RECOVERY_LIMIT = 3</code>과
+<code>hasAttemptedReactiveCompact</code>가 있다. 자동 복구에는 반드시 상한이 있어야
+한다. 그렇지 않으면 context를 줄이지 못한 session이 API 호출을 무한 반복할
+수 있다.</p>
+<h2 id="sdk에서-관측되는-것과-source에서만-보이는-것"><a class="header" href="#sdk에서-관측되는-것과-source에서만-보이는-것">SDK에서 관측되는 것과 source에서만 보이는 것</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>항목</th><th>Claude Agent SDK에서 관측</th><th>source를 읽어야 알 수 있음</th></tr></thead><tbody>
+<tr><td>assistant text</td><td>assistant message로 관측</td><td>내부 generator 분기</td></tr>
+<tr><td>tool call/result</td><td>tool use/result block으로 관측</td><td>streaming admission과 batch 구성</td></tr>
+<tr><td>token usage</td><td>result usage에서 관측</td><td>threshold와 recovery counter</td></tr>
+<tr><td>error</td><td>최종 노출 error는 관측</td><td>보류된 intermediate error와 retry ladder</td></tr>
+<tr><td>compaction</td><td>boundary·usage가 있을 때 일부 관측</td><td>snip/microcompact/collapse의 내부 우선순위</td></tr>
+<tr><td>종료</td><td>result subtype과 error로 관측</td><td><code>Terminal</code> discriminated union 전체</td></tr>
+</tbody></table>
+</div>
+<p>강의에서는 오른쪽 열을 raw SDK evidence인 것처럼 표현하면 안 된다. source
+설명과 관측 evidence가 만나는 지점을 따로 표시해야 한다.</p>
+<h2 id="직접-따라가는-source-실습"><a class="header" href="#직접-따라가는-source-실습">직접 따라가는 source 실습</a></h2>
+<ol>
+<li><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query.ts#L219-L235"><code>query()</code> 진입점</a>에서 <code>yield* queryLoop</code>를 찾는다.</li>
+<li>같은 파일에서 <code>transition:</code>을 검색해 모든 continue reason을 적는다.</li>
+<li><code>runTools(</code>와 <code>StreamingToolExecutor</code>를 검색해 batch 경로와 streaming
+경로가 만나는 위치를 찾는다.</li>
+<li><code>isWithheldMaxOutputTokens</code>를 찾아 어떤 message만 보류하는지 확인한다.</li>
+<li>Education Shell의 실제 Claude SDK trace에서 대응 가능한 assistant,
+tool use/result, result event만 표시한다.</li>
+</ol>
+<h2 id="확인-질문"><a class="header" href="#확인-질문">확인 질문</a></h2>
+<ul>
+<li>Generator가 event emitter보다 agent loop에 유리한 이유는 무엇인가?</li>
+<li><code>Terminal</code>과 assistant final text는 왜 같은 것이 아닌가?</li>
+<li>Intermediate error를 숨기는 것과 실행 진실을 조작하는 것은 어떻게 다른가?</li>
+<li>Auto-compact 실패 횟수에 상한이 없으면 어떤 비용 문제가 생기는가?</li>
+<li>source의 <code>transition.reason</code>을 SDK raw event에서 직접 볼 수 있는가?</li>
+</ul>
+<h2 id="핵심-정리"><a class="header" href="#핵심-정리">핵심 정리</a></h2>
+<ul>
+<li>에이전트는 model 호출이 아니라 observation을 다시 model에 돌려주는 loop다.</li>
+<li><code>query()</code>는 stream message를 yield하고 종료 이유를 typed value로 return한다.</li>
+<li>각 iteration은 context, model stream, tool 실행, post-stream 판단으로 구성된다.</li>
+<li>압축은 손실 크기가 다른 여러 계층이며 실제 event로 관측해야 한다.</li>
+<li>복구 가능한 error는 consumer를 성급히 종료시키지 않도록 보류하지만, 최종
+실패는 원래 error로 노출한다.</li>
+<li>모든 retry, compaction과 background action에는 circuit breaker가 필요하다.</li>
+</ul>
+<h2 id="원문과-실제-source"><a class="header" href="#원문과-실제-source">원문과 실제 source</a></h2>
+<ul>
+<li><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch05-agent-loop.md">원저자 Chapter 5: The Agent Loop</a></li>
+<li><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query.ts#L219-L235">실제 <code>query()</code> source</a></li>
+<li><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query.ts#L204-L217">실제 loop <code>State</code> source</a></li>
+<li><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query/transitions.ts"><code>Terminal</code>과 <code>Continue</code> 타입</a></li>
+<li><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/services/tools/StreamingToolExecutor.ts"><code>StreamingToolExecutor</code></a></li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="6장-도구--정의에서-실행까지"><a class="header" href="#6장-도구--정의에서-실행까지">6장: 도구 — 정의에서 실행까지</a></h1>
+<h2 id="원저자의-관점-4"><a class="header" href="#원저자의-관점-4">원저자의 관점</a></h2>
+<p>Tool은 모델이 세상에 행동하는 신경계다. 이름과 함수만 가진 callback이 아니라
+입력 schema, 권한, 동시성, 실행, 결과와 UI를 함께 소유한다.</p>
+<h2 id="14단계-파이프라인"><a class="header" href="#14단계-파이프라인">14단계 파이프라인</a></h2>
+<p>입력을 parse·validate한 뒤 context와 abort signal을 준비한다. tool별 검사,
+rule, permission mode와 사용자 승인을 통과하면 실행한다. 결과를 예산에 맞게
+정리하고 hook과 telemetry를 거쳐 message history로 돌려준다.</p>
+<p><code>isConcurrencySafe(input)</code>과 <code>isReadOnly(input)</code>은 tool type이 아니라 실제
+입력을 받는다. 같은 Bash 도구도 조회 명령과 파일 변경 명령의 의미가 다르기
+때문이다.</p>
+<h2 id="model에서-observation까지"><a class="header" href="#model에서-observation까지">Model에서 observation까지</a></h2>
+<pre><code class="language-mermaid">flowchart LR
+    S["JSON Schema"] --&gt; V["parse·validate"]
+    V --&gt; C["tool check"]
+    C --&gt; R["rule·permission mode"]
+    R --&gt; U{"사용자 승인이 필요한가?"}
+    U -- "예" --&gt; P["native permission prompt"]
+    U -- "아니오" --&gt; X["executor"]
+    P --&gt; X
+    X --&gt; B["result budget"]
+    B --&gt; H["post-tool hook"]
+    H --&gt; O["tool_result observation"]
+    O --&gt; M["다음 model 판단"]
+</code></pre>
+<p>화면이 읽기 좋게 result를 요약할 수는 있지만, 마지막 <code>O</code>에서 model이 받는
+observation은 executor가 반환한 실제 결과여야 한다.</p>
+<h2 id="실제-source-공통-기본값"><a class="header" href="#실제-source-공통-기본값">실제 source: 공통 기본값</a></h2>
+<pre><code class="language-typescript">export function buildTool&lt;D extends AnyToolDef&gt;(def: D): BuiltTool&lt;D&gt; {
+  return {
+    ...TOOL_DEFAULTS,
+    userFacingName: () =&gt; def.name,
+    ...def,
+  } as BuiltTool&lt;D&gt;
+}
+</code></pre>
+<p><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/Tool.ts#L704-L791"><code>buildTool()</code> source</a>는 tool마다 반복되던 기본 method를
+한곳에서 채운다. <code>isConcurrencySafe</code>와 <code>isReadOnly</code> 기본값이 <code>false</code>인 것은
+새 tool을 근거 없이 병렬·읽기 전용으로 분류하지 않기 위한 fail-closed 선택이다.</p>
+<h2 id="source-추적-실습"><a class="header" href="#source-추적-실습">Source 추적 실습</a></h2>
+<ol>
+<li><code>FileReadTool</code>과 <code>FileEditTool</code>의 <code>buildTool()</code> 입력을 비교한다.</li>
+<li><code>isConcurrencySafe(input)</code>이 argument를 보는 tool을 찾는다.</li>
+<li><code>checkPermissions</code> 이후 실제 <code>call()</code>로 가는 순서를 추적한다.</li>
+<li>tool use ID가 result message에 보존되는지 SDK raw event에서 확인한다.</li>
+</ol>
+<h2 id="가져갈-패턴-4"><a class="header" href="#가져갈-패턴-4">가져갈 패턴</a></h2>
+<ul>
+<li>새 도구의 기본값은 fail-closed다.</li>
+<li>안전성은 도구 이름이 아니라 parsed input으로 평가한다.</li>
+<li>tool 검사, rule, mode, interactive prompt와 classifier를 계층화한다.</li>
+<li>입력뿐 아니라 개별·누적 tool result에도 token budget을 둔다.</li>
+<li>minified build에서도 안정적인 오류 분류값만 telemetry에 보낸다.</li>
+</ul>
+<h2 id="book-sdk에서-같이-보기-4"><a class="header" href="#book-sdk에서-같이-보기-4">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK 2장 tool contract, 4장 실행 orchestration, 8장 tool prompt, 16장
+permission과 함께 읽는다.</p>
+<h2 id="원문-4"><a class="header" href="#원문-4">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch06-tools.md">Chapter 6: Tools — From Definition to Execution</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="7장-동시-도구-실행"><a class="header" href="#7장-동시-도구-실행">7장: 동시 도구 실행</a></h1>
+<h2 id="원저자의-관점-5"><a class="header" href="#원저자의-관점-5">원저자의 관점</a></h2>
+<p>여러 tool call이 있다고 모두 <code>Promise.all</code>로 실행하거나 모두 직렬화하지 않는다.
+입력의 의미에 따라 안전한 연속 구간을 batch로 묶고, 쓰기와 context modifier는
+독점 구간으로 유지한다.</p>
+<h2 id="streamingtoolexecutor"><a class="header" href="#streamingtoolexecutor">StreamingToolExecutor</a></h2>
+<p>모델이 전체 응답을 끝내기 전에 완성된 read-only tool call을 시작한다. 새
+call이 stream으로 들어올 때 admission rule을 평가하고, 안전한 작업은 병렬로
+진행한다. 완료 시점이 달라도 결과는 모델이 요청한 원래 순서대로 전달한다.</p>
+<p>한 concurrent sibling에서 치명적 오류가 나면 abort contract에 따라 다른
+subprocess를 중단한다. speculative path를 사용할 수 없게 되면 <code>discard()</code>로
+정상 non-streaming 실행에 되돌아간다.</p>
+<h2 id="연속-구간으로-생각하기"><a class="header" href="#연속-구간으로-생각하기">연속 구간으로 생각하기</a></h2>
+<pre><code class="language-mermaid">flowchart LR
+    A["Read A"] --&gt; B["Read B"]
+    B --&gt; C["Grep"]
+    C --&gt; D["Edit"]
+    D --&gt; E["Read C"]
+    E --&gt; F["Read D"]
+
+    subgraph Batch1["병렬 batch"]
+      A
+      B
+      C
+    end
+    subgraph Serial["독점 실행"]
+      D
+    end
+    subgraph Batch2["병렬 batch"]
+      E
+      F
+    end
+</code></pre>
+<p>병렬 안전한 call 사이에 쓰기 call이 하나 들어오면 전체 목록을 병렬화하지
+않는다. 순서를 유지한 채 안전한 연속 구간만 batch로 만든다.</p>
+<h2 id="실제-source-sibling-abort-경계"><a class="header" href="#실제-source-sibling-abort-경계">실제 source: sibling abort 경계</a></h2>
+<pre><code class="language-typescript">export class StreamingToolExecutor {
+  private tools: TrackedTool[] = []
+  private hasErrored = false
+  private siblingAbortController: AbortController
+  private discarded = false
+}
+</code></pre>
+<p>실제 constructor와 <code>discard()</code>는
+<a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/services/tools/StreamingToolExecutor.ts#L40-L88"><code>StreamingToolExecutor.ts</code> 40~69행</a>에 있다. sibling
+controller는 Bash 오류 때 함께 실행 중인 subprocess를 중단하지만 parent
+turn 전체를 abort하지 않는다. 서로 다른 중단 범위를 같은 signal로 합치지
+않은 것이 핵심이다.</p>
+<h2 id="완료-순서와-제출-순서"><a class="header" href="#완료-순서와-제출-순서">완료 순서와 제출 순서</a></h2>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant Model
+    participant Exec as StreamingToolExecutor
+    participant A as Read A
+    participant B as Read B
+
+    Model-&gt;&gt;Exec: A, B 순서로 tool_use
+    Exec-&gt;&gt;A: start
+    Exec-&gt;&gt;B: start
+    B--&gt;&gt;Exec: 먼저 완료
+    A--&gt;&gt;Exec: 나중 완료
+    Exec--&gt;&gt;Model: A result
+    Exec--&gt;&gt;Model: B result
+</code></pre>
+<p>병렬 실행은 wall-clock 완료 순서를 바꾸지만 model이 요청한 논리 순서를 바꾸지
+않는다. 이 보존이 없으면 다음 reasoning에서 tool call과 observation이 어긋난다.</p>
+<h2 id="가져갈-패턴-5"><a class="header" href="#가져갈-패턴-5">가져갈 패턴</a></h2>
+<ul>
+<li>operation type이 아니라 실제 argument로 병렬 안전성을 분류한다.</li>
+<li>느린 producer가 뒤 항목을 만드는 동안 앞의 독립 작업을 시작한다.</li>
+<li>완료 순서보다 소비자가 기대하는 제출 순서를 보존한다.</li>
+<li>speculation에는 명확한 폐기와 정상 경로 복귀가 필요하다.</li>
+</ul>
+<h2 id="book-sdk에서-같이-보기-5"><a class="header" href="#book-sdk에서-같이-보기-5">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK 4장의 동시성·streaming·interrupt와 27장의 프로덕션 실행 패턴에
+직접 대응한다.</p>
+<h2 id="원문-5"><a class="header" href="#원문-5">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch07-concurrency.md">Chapter 7: Concurrent Tool Execution</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="8장-서브에이전트-생성"><a class="header" href="#8장-서브에이전트-생성">8장: 서브에이전트 생성</a></h1>
+<h2 id="원저자의-관점-6"><a class="header" href="#원저자의-관점-6">원저자의 관점</a></h2>
+<p>서브에이전트는 단순히 같은 모델을 한 번 더 호출하는 기능이 아니다. 부모와
+분리된 대화 루프, 도구 집합, 권한 경계, abort controller와 context budget을
+가진 독립 실행 단위다. 부모는 자식의 내부 대화를 전부 소비하지 않고, 자식이
+반환한 최종 결과를 받아 다음 판단을 이어간다.</p>
+<p>이 구조는 검색 결과로 주 대화를 오염시키지 않거나, 독립 작업을 병렬화하거나,
+별도의 검증 관점을 투입할 때 유효하다. 반대로 단순 작업까지 모두 위임하면
+조정 비용과 token 비용만 늘어난다.</p>
+<h2 id="agent-도구에서-실행까지"><a class="header" href="#agent-도구에서-실행까지"><code>Agent</code> 도구에서 실행까지</a></h2>
+<p>모델은 <code>description</code>, <code>prompt</code>, <code>subagent_type</code>, <code>model</code>,
+<code>run_in_background</code> 같은 입력으로 자식을 요청한다. Team이나 격리 기능이
+활성화된 경우에는 이름, team, permission mode, worktree 같은 필드가 추가된다.
+중요한 점은 사용할 수 없는 기능을 설명으로 금지하는 대신 schema에서 아예
+제거한다는 것이다. 도구 schema 자체가 모델의 실행 설명서이기 때문이다.</p>
+<p>호출 경로는 대략 다음 순서를 따른다.</p>
+<ol>
+<li>teammate, fork, 일반 subagent 중 실행 형태를 결정한다.</li>
+<li>agent definition과 필요한 MCP server를 해석한다.</li>
+<li>model, permission, tool pool과 격리 경로를 확정한다.</li>
+<li>동기 실행인지 background 실행인지 결정한다.</li>
+<li><code>runAgent()</code>가 독립 query loop를 시작한다.</li>
+<li>수명주기가 끝나면 부모에게 요약 결과와 상태를 반환한다.</li>
+</ol>
+<p><code>runAgent()</code>는 새 agent뿐 아니라 fork, custom agent, coordinator worker를
+같은 lifecycle로 처리한다. 차이는 별도 lifecycle을 복제해서 만들지 않고,
+명시적인 override와 resolved definition으로 주입한다.</p>
+<h2 id="context와-권한"><a class="header" href="#context와-권한">Context와 권한</a></h2>
+<p>fresh agent는 필요한 사용자 prompt와 제한된 project context로 시작한다. fork
+agent는 부모 대화와 file state cache를 복제하지만, 아직 결과가 없는 불완전한
+tool call은 제거한다. 그렇지 않으면 API가 <code>tool_use</code>와 <code>tool_result</code>가 맞지
+않는 대화를 거부할 수 있다.</p>
+<p>읽기 전용 agent는 편집 규칙이나 오래된 git snapshot처럼 역할과 관계없는
+context를 생략할 수 있다. 권한 역시 부모 권한을 무조건 복제하지 않는다.
+각 자식이 실제로 필요한 tool과 permission만 받도록 하는 것이 실행 경계다.</p>
+<h2 id="생성과-반환-경로"><a class="header" href="#생성과-반환-경로">생성과 반환 경로</a></h2>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant Parent
+    participant AgentTool
+    participant Child as runAgent()
+    participant Model
+
+    Parent-&gt;&gt;AgentTool: description·prompt·type·model
+    AgentTool-&gt;&gt;AgentTool: definition·MCP·permission 해석
+    AgentTool-&gt;&gt;Child: 독립 context와 tool pool
+    Child-&gt;&gt;Model: child query loop
+    Model--&gt;&gt;Child: tool use·final result
+    Child--&gt;&gt;AgentTool: 완료·실패·background 상태
+    AgentTool--&gt;&gt;Parent: 결과 observation
+</code></pre>
+<p>부모가 받는 것은 자식의 hidden reasoning 전체가 아니라 task 결과와 필요한
+상태다. raw child transcript는 감사 surface에 보존할 수 있지만 primary
+사용자 대화와 자동으로 합쳐지지 않는다.</p>
+<h2 id="실제-source-agent-도구의-동적-prompt"><a class="header" href="#실제-source-agent-도구의-동적-prompt">실제 source: Agent 도구의 동적 prompt</a></h2>
+<pre><code class="language-typescript">export const AgentTool = buildTool({
+  async prompt({ agents, tools, getToolPermissionContext }) {
+    const permission = await getToolPermissionContext()
+    const filtered = filterDeniedAgents(agents, permission, AGENT_TOOL_NAME)
+    return getPrompt(filtered)
+  },
+  name: AGENT_TOOL_NAME,
+  aliases: [LEGACY_AGENT_TOOL_NAME],
+})
+</code></pre>
+<p>실제 source는 MCP requirement와 coordinator mode도 함께 처리한다.
+<a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/tools/AgentTool/AgentTool.tsx#L196-L235"><code>AgentTool.tsx</code> 196행부터</a>에서 schema가 실행 가능 agent와
+permission에 따라 어떻게 달라지는지 확인한다.</p>
+<h2 id="관측-체크"><a class="header" href="#관측-체크">관측 체크</a></h2>
+<ul>
+<li>SDK에서 <code>Agent</code> tool use와 matching result가 보이는가?</li>
+<li>parent session과 child session/task ID를 구분할 수 있는가?</li>
+<li>child가 사용자 question을 직접 투사하지 않고 parent에 보고하는가?</li>
+<li>background 완료가 parent를 깨우는 명시적 event 또는 result가 있는가?</li>
+</ul>
+<h2 id="가져갈-패턴-6"><a class="header" href="#가져갈-패턴-6">가져갈 패턴</a></h2>
+<ul>
+<li>위임은 역할 이름이 아니라 별도 context와 권한을 제공할 가치가 있을 때 한다.</li>
+<li>부모는 자식의 매 token을 사용자 대화로 투사하지 않고 결과와 필요한 상태를 받는다.</li>
+<li>자식은 사용자에게 직접 질문하는 대신 부모 오케스트레이터에 결과를 보고한다.</li>
+<li>lifecycle cleanup은 호출자가 기억하게 하지 않고 agent runner가 소유한다.</li>
+<li>schema에서 감춘 기능을 prompt로 억지로 다시 설명하지 않는다.</li>
+</ul>
+<h2 id="book-sdk에서-같이-보기-6"><a class="header" href="#book-sdk에서-같이-보기-6">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK의 서브에이전트, Team, 권한, 관측성 장을 읽을 때 이 장을 실행 구현의
+지도처럼 사용할 수 있다. SDK event에서 보이는 것은 대개 agent/task/tool
+실행의 결과이며, 원저자가 설명한 내부 orchestration 개념이 그대로 하나의
+event 이름으로 노출된다고 가정해서는 안 된다.</p>
+<h2 id="원문-6"><a class="header" href="#원문-6">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch08-sub-agents.md">Chapter 8: Spawning Sub-Agents</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="9장-fork-에이전트와-프롬프트-캐시"><a class="header" href="#9장-fork-에이전트와-프롬프트-캐시">9장: Fork 에이전트와 프롬프트 캐시</a></h1>
+<h2 id="원저자의-관점-7"><a class="header" href="#원저자의-관점-7">원저자의 관점</a></h2>
+<p>fork agent는 부모가 하던 일을 요약문만 받아 새로 시작하는 자식이 아니다.
+부모의 대화 prefix, system prompt, tool definition과 file state를 최대한
+동일하게 유지한 채 새 실행 가지를 만든다. 이 설계의 핵심 이익은 편리함보다
+프롬프트 캐시 공유에 있다.</p>
+<p>긴 대화를 fresh agent에게 다시 제공하면 같은 token을 처음부터 처리해야 한다.
+반면 byte-identical한 prefix를 유지한 fork는 부모가 이미 만든 cache를 재사용할
+수 있다. 코드 검토, 기억 추출, 검증처럼 부모 context가 꼭 필요한 짧은 작업도
+경제적으로 분리할 수 있는 이유다.</p>
+<h2 id="캐시가-요구하는-엄격함"><a class="header" href="#캐시가-요구하는-엄격함">캐시가 요구하는 엄격함</a></h2>
+<p>프롬프트 캐시는 의미가 비슷하다고 재사용되지 않는다. byte sequence와 순서가
+안정적이어야 한다. 따라서 fork child가 실제로 사용하지 못하는 tool이라도
+부모와 같은 tool definition을 유지하고 실행 시 permission에서 막는 편이
+cache 관점에서는 더 나을 수 있다.</p>
+<p>동적 agent 목록이나 MCP 상태를 tool description 중간에 삽입하면 이후 prefix를
+모두 바꾸게 된다. 원저자는 안정적인 system/tool 영역과 변동성이 큰 attachment를
+분리하는 방식을 강조한다.</p>
+<h2 id="fork의-경계"><a class="header" href="#fork의-경계">Fork의 경계</a></h2>
+<p>fork는 부모 상태를 복사하지만 부모와 같은 agent는 아니다.</p>
+<ul>
+<li>자식은 별도 agent ID와 abort lifecycle을 가진다.</li>
+<li>부모의 incomplete tool call은 정리한 뒤 넘긴다.</li>
+<li>file cache는 복제하지만 이후 eviction과 접근 순서는 독립적이다.</li>
+<li>재귀 fork는 query source와 대화 표식을 함께 검사해 막는다.</li>
+<li>자식 결과가 유효해도 부모가 이를 채택하고 후속 행동을 결정해야 한다.</li>
+</ul>
+<p>이 구분이 없으면 fork를 session reuse와 혼동하기 쉽다. session reuse는 같은
+대화를 이어가는 것이고, fork는 같은 과거에서 출발하는 새 실행 가지다.</p>
+<h2 id="fresh-resume와-fork"><a class="header" href="#fresh-resume와-fork">Fresh, resume와 fork</a></h2>
+<pre><code class="language-mermaid">flowchart TB
+    H["기존 대화 history"]
+    H --&gt; R["Resume: 같은 session을 계속 사용"]
+    H --&gt; F["Fork: 같은 prefix에서 새 branch"]
+    S["요약·새 prompt"] --&gt; N["Fresh agent: 새 cache path"]
+    F --&gt; C["부모 cache prefix 공유 가능"]
+    R --&gt; C2["같은 conversation history 유지"]
+</code></pre>
+<p>세 경로는 session ID와 cache 의미가 다르다. permission 승인 후 같은 stream이
+이어지는 것은 resume나 fork가 아니라 현재 turn의 계속 실행이다.</p>
+<h2 id="실제-source-cache-safe-parameter"><a class="header" href="#실제-source-cache-safe-parameter">실제 source: cache-safe parameter</a></h2>
+<pre><code class="language-typescript">export type CacheSafeParams = {
+  systemPrompt: SystemPrompt
+  userContext: { [k: string]: string }
+  systemContext: { [k: string]: string }
+  toolUseContext: ToolUseContext
+  forkContextMessages: Message[]
+}
+</code></pre>
+<p><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/utils/forkedAgent.ts#L43-L72"><code>forkedAgent.ts</code></a>는 system prompt, tools, model, message prefix와
+thinking config가 cache key에 영향을 준다고 주석으로 명시한다. field가 의미상
+비슷한지만 보는 것이 아니라 실제 직렬화 prefix가 같아야 한다.</p>
+<h2 id="증거로-확인하기"><a class="header" href="#증거로-확인하기">증거로 확인하기</a></h2>
+<ol>
+<li>fork 전후 <code>cache_read_input_tokens</code>를 비교한다.</li>
+<li>model이나 tool schema가 달라진 fork를 별도로 실행한다.</li>
+<li>cache hit 차이를 usage에서 확인한다.</li>
+<li>session ID가 같다는 사실만으로 fork나 cache hit을 주장하지 않는다.</li>
+</ol>
+<h2 id="가져갈-패턴-7"><a class="header" href="#가져갈-패턴-7">가져갈 패턴</a></h2>
+<ul>
+<li>캐시 공유는 prompt 내용뿐 아니라 prompt 조립 순서의 계약이다.</li>
+<li>안정적 정보와 변동 정보의 위치를 분리한다.</li>
+<li>fork는 새 session 생성의 별명이 아니라 명시적인 branch다.</li>
+<li>cache 절약을 이유로 권한 경계를 약화하지 않는다.</li>
+<li>내부 구현이 캐시를 실제로 재사용했는지는 usage evidence로 확인한다.</li>
+</ul>
+<h2 id="book-sdk에서-같이-보기-7"><a class="header" href="#book-sdk에서-같이-보기-7">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK의 prompt caching, session, compaction, subagent 장과 함께 읽는다.
+SDK에서 관측된 <code>cache_read_input_tokens</code>나 session/event 기록이 있을 때만 실제
+cache 재사용을 말할 수 있다. “부모와 비슷한 prompt였다”는 설명만으로 cache
+hit을 증명할 수는 없다.</p>
+<h2 id="원문-7"><a class="header" href="#원문-7">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch09-fork-agents.md">Chapter 9: Fork Agents and Prompt Cache Sharing</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="10장-task-조정과-swarm"><a class="header" href="#10장-task-조정과-swarm">10장: Task, 조정과 Swarm</a></h1>
+<h2 id="원저자의-관점-8"><a class="header" href="#원저자의-관점-8">원저자의 관점</a></h2>
+<p>여러 agent를 spawn하는 것과 여러 agent가 하나의 작업을 조정하는 것은 다른
+문제다. 조정에는 task 상태, 의존성, 메시지 전달, 결과 수집과 실패 정리가
+필요하다. 원저자는 이 계층을 “더 똑똑한 모델”로 감추지 않고 명시적인 실행
+기록과 routing으로 설명한다.</p>
+<p>Task는 보통 queued, running, completed, failed, cancelled 같은 상태를 가진다.
+이 상태는 agent의 지능을 나타내는 것이 아니라 누가 어떤 일을 소유하고 있는지
+추적하는 운영 정보다. task dependency가 있다면 선행 작업의 terminal 상태를
+확인한 뒤 후속 작업을 시작한다.</p>
+<h2 id="메시지는-자동-공유되지-않는다"><a class="header" href="#메시지는-자동-공유되지-않는다">메시지는 자동 공유되지 않는다</a></h2>
+<p>team member가 생성됐다고 모든 대화가 lead에게 자동으로 보이지 않는다. member는
+명시적인 메시지 도구를 사용해 lead나 다른 member에게 결과를 전달한다. background
+agent 역시 완료 사실과 결과를 부모가 다시 읽을 수 있는 경로로 알려야 한다.</p>
+<p>이 설계는 중요한 제한을 만든다.</p>
+<ul>
+<li>자식의 일반 텍스트를 사용자 대화에 그대로 섞지 않는다.</li>
+<li>사용자 질문과 permission 처리는 primary session이 소유한다.</li>
+<li>worker는 관찰 결과와 실패 이유를 parent에게 보낸다.</li>
+<li>parent가 여러 worker의 결과를 비교하고 사용자에게 설명한다.</li>
+</ul>
+<h2 id="동적-workflow를-과장하지-않기"><a class="header" href="#동적-workflow를-과장하지-않기">동적 workflow를 과장하지 않기</a></h2>
+<p>모델은 상황에 따라 task를 만들고 agent를 선택할 수 있다. 그러나 SDK event에는
+“동적 workflow”라는 추상 개념이 완성된 그래프로 나타나지 않을 수 있다. 실제
+관측 표면에는 agent tool call, task metadata, tool result, message와 같은
+더 낮은 수준의 사건만 남는다.</p>
+<p>따라서 시각화나 교육 자료가 추상 workflow를 보여 준다면 그것은 관측 event를
+근거로 재구성한 해석임을 밝혀야 한다. 존재하지 않는 노드를 raw evidence인
+것처럼 표시하면 안 된다.</p>
+<h2 id="조정의-네-책임"><a class="header" href="#조정의-네-책임">조정의 네 책임</a></h2>
+<pre><code class="language-mermaid">flowchart LR
+    LEAD["Primary lead"]
+    LEAD --&gt; SPAWN["Agent spawn"]
+    LEAD --&gt; TASK["Task 상태·의존성"]
+    LEAD --&gt; ROUTE["명시적 message routing"]
+    LEAD --&gt; USER["사용자 질문·permission"]
+    SPAWN --&gt; W1["Worker A"]
+    SPAWN --&gt; W2["Worker B"]
+    W1 --&gt; ROUTE
+    W2 --&gt; ROUTE
+    ROUTE --&gt; LEAD
+</code></pre>
+<p>Team이 있다는 사실만으로 worker text가 lead에게 전달되지는 않는다. routing
+tool과 task result가 있어야 한다. 사용자 interaction은 lead가 소유하고 worker는
+질문이나 차단 이유를 lead에게 보고한다.</p>
+<h2 id="실제-source-taskcreate도-일반-tool이다"><a class="header" href="#실제-source-taskcreate도-일반-tool이다">실제 source: TaskCreate도 일반 Tool이다</a></h2>
+<pre><code class="language-typescript">export const TaskCreateTool = buildTool({
+  name: TASK_CREATE_TOOL_NAME,
+  searchHint: 'create a task in the task list',
+  userFacingName() {
+    return 'TaskCreate'
+  },
+  isConcurrencySafe() {
+    return true
+  },
+})
+</code></pre>
+<p>전체 schema와 enable gate는
+<a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/tools/TaskCreateTool/TaskCreateTool.ts#L48-L75"><code>TaskCreateTool.ts</code> 48행부터</a>에 있다. Task는 숨은 추론 구조가
+아니라 tool call과 persistence를 가진 명시적 제품 기능이다.</p>
+<h2 id="sdk-event를-graph로-바꿀-때"><a class="header" href="#sdk-event를-graph로-바꿀-때">SDK event를 graph로 바꿀 때</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>graph 요소</th><th>필요한 근거</th></tr></thead><tbody>
+<tr><td>worker node</td><td>agent/session/task metadata</td></tr>
+<tr><td>task edge</td><td>parent ID 또는 명시적 dependency</td></tr>
+<tr><td>message edge</td><td>SendMessage 같은 routing event</td></tr>
+<tr><td>완료 상태</td><td>terminal tool result 또는 task update</td></tr>
+<tr><td>“dynamic workflow” label</td><td>위 사건을 해석한 projection임을 표시</td></tr>
+</tbody></table>
+</div>
+<h2 id="가져갈-패턴-8"><a class="header" href="#가져갈-패턴-8">가져갈 패턴</a></h2>
+<ul>
+<li>spawn, task tracking, message routing, user interaction을 서로 다른 책임으로 둔다.</li>
+<li>agent 이름보다 task ID와 session ID를 우선해 결과를 연결한다.</li>
+<li>worker가 실패하면 성공 요약을 만들지 않고 원래 실패를 parent에 전달한다.</li>
+<li>coordination overhead가 작업 자체보다 커지는 경우 단일 agent를 유지한다.</li>
+<li>관측된 사건과 교육용 해석을 같은 데이터라고 부르지 않는다.</li>
+</ul>
+<h2 id="book-sdk에서-같이-보기-8"><a class="header" href="#book-sdk에서-같이-보기-8">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK의 Team, swarm, task event, workflow 시각화 장과 직접 연결된다. 교육
+쉘에서는 Claude SDK session을 실행해 얻은 실제 task/tool event를 evidence로
+보존하고, Mothership은 그 기록을 읽어 교육용 관계를 설명해야 한다. Mothership
+자기 자신의 OpenCode task를 Claude SDK evidence로 대체해서는 안 된다.</p>
+<h2 id="원문-8"><a class="header" href="#원문-8">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch10-coordination.md">Chapter 10: Tasks, Coordination, and Swarms</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="11장-memory--대화를-넘어-학습하기"><a class="header" href="#11장-memory--대화를-넘어-학습하기">11장: Memory — 대화를 넘어 학습하기</a></h1>
+<h2 id="원저자의-관점-9"><a class="header" href="#원저자의-관점-9">원저자의 관점</a></h2>
+<p>Claude Code의 장기 기억은 거대한 비공개 데이터베이스보다 사용자가 열어 볼 수
+있는 Markdown 파일을 중심으로 구성된다. 파일 저장은 고급 query 능력이 약한
+대신, 무엇을 기억하는지 사용자가 직접 읽고 고칠 수 있다는 신뢰상의 이점이 있다.</p>
+<p>원저자는 기억을 대략 사용자 선호, 피드백, 프로젝트 사실, 외부 참고 정보로
+분류한다. 저장 판단에서 중요한 질문은 “현재 repository를 다시 읽으면 쉽게
+도출할 수 있는가?”다. 다시 얻을 수 있는 사실을 계속 기억으로 복제하면 오래된
+정보와 중복이 늘어난다.</p>
+<h2 id="저장보다-검색이-어렵다"><a class="header" href="#저장보다-검색이-어렵다">저장보다 검색이 어렵다</a></h2>
+<p>파일에 기록하는 것만으로는 context가 되지 않는다. 현재 요청과 관련된 기억을
+골라야 하고, 오래되었거나 모순되는 항목을 구분해야 한다. 원저자가 설명하는
+구조는 manifest와 별도 model query를 이용해 관련 기억을 고르는 방식이다.</p>
+<p>이때 model이 선택했다는 이유만으로 사실성이 보장되지는 않는다. source path,
+작성 시각, project 범위와 현재 파일 상태를 함께 제시해야 한다. 기억은 evidence의
+대체물이 아니라 다음 관찰을 안내하는 context다.</p>
+<h2 id="수명주기"><a class="header" href="#수명주기">수명주기</a></h2>
+<ol>
+<li>대화나 tool 결과에서 장기 가치가 있는 후보를 찾는다.</li>
+<li>derivability와 중복 여부를 확인한다.</li>
+<li>사람이 읽을 수 있는 파일에 기록한다.</li>
+<li>다음 session에서 요청과 관련된 기억만 recall한다.</li>
+<li>오래되거나 모순된 기억을 정리한다.</li>
+</ol>
+<p>background extraction이나 consolidation은 이 과정을 자동화할 수 있지만,
+사용자가 확인할 수 없는 hidden memory를 진실처럼 주입해서는 안 된다.</p>
+<h2 id="memory-수명주기"><a class="header" href="#memory-수명주기">Memory 수명주기</a></h2>
+<pre><code class="language-mermaid">flowchart LR
+    C["대화·tool result"] --&gt; E["후보 추출"]
+    E --&gt; D{"현재 repo에서 재도출 가능한가?"}
+    D -- "예" --&gt; DROP["저장하지 않음"]
+    D -- "아니오" --&gt; W["Markdown memory 기록"]
+    W --&gt; I["manifest/index"]
+    I --&gt; R["다음 session 관련 항목 recall"]
+    R --&gt; V["현재 source와 freshness 검증"]
+</code></pre>
+<p>기억 추출 model이 저장했다는 사실은 기억 내용이 참이라는 보장이 아니다.
+source path, 작성 시각, project scope와 현재 repository를 다시 확인해야 한다.</p>
+<h2 id="실제-source-fork로-memory를-추출한다"><a class="header" href="#실제-source-fork로-memory를-추출한다">실제 source: fork로 memory를 추출한다</a></h2>
+<pre><code class="language-typescript">await runForkedAgent({
+  promptMessages: [createUserMessage({ content: userPrompt })],
+  cacheSafeParams: createCacheSafeParams(context),
+  canUseTool: createMemoryFileCanUseTool(memoryPath),
+  querySource: 'session_memory',
+  forkLabel: 'session_memory',
+})
+</code></pre>
+<p><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/services/SessionMemory/sessionMemory.ts#L300-L329"><code>sessionMemory.ts</code> 300~329행</a>에서 setup context와 memory file
+전용 permission을 확인한다. background fork가 부모 mutable state를 직접
+공유하지 않도록 격리하는 이유도 함께 읽는다.</p>
+<h2 id="memory와-evidence-구분"><a class="header" href="#memory와-evidence-구분">Memory와 evidence 구분</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>자료</th><th>역할</th></tr></thead><tbody>
+<tr><td>Memory Markdown</td><td>다음 session 판단을 돕는 편집 가능한 지식</td></tr>
+<tr><td>Session transcript</td><td>실제 대화와 tool call 원전</td></tr>
+<tr><td>OTel/Opik trace</td><td>실행 시간·관계·평가를 조회하는 관측 표면</td></tr>
+<tr><td>Skill</td><td>반복 운영 절차</td></tr>
+</tbody></table>
+</div>
+<h2 id="가져갈-패턴-9"><a class="header" href="#가져갈-패턴-9">가져갈 패턴</a></h2>
+<ul>
+<li>저장 형식보다 provenance와 수정 가능성을 먼저 설계한다.</li>
+<li>현재 repository에서 재도출 가능한 사실은 무조건 기억하지 않는다.</li>
+<li>recall 결과에는 source와 freshness를 함께 둔다.</li>
+<li>memory와 session transcript, raw event, evaluation을 서로 바꾸어 부르지 않는다.</li>
+<li>자동 기억은 사람이 검사하고 삭제할 수 있어야 한다.</li>
+</ul>
+<h2 id="book-sdk에서-같이-보기-9"><a class="header" href="#book-sdk에서-같이-보기-9">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK의 session persistence, project instruction, context, compaction 장과 함께
+읽는다. Education Shell의 raw JSON이나 OTel trace는 실행 증거이며 memory가
+아니다. Mothership이 강좌 운영 중 얻은 교훈을 skill이나 문서로 남길 때에도
+실행 원전의 링크를 유지해야 한다.</p>
+<h2 id="원문-9"><a class="header" href="#원문-9">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch11-memory.md">Chapter 11: Memory — Learning Beyond the Conversation</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="12장-확장--skill과-hook"><a class="header" href="#12장-확장--skill과-hook">12장: 확장 — Skill과 Hook</a></h1>
+<h2 id="원저자의-관점-10"><a class="header" href="#원저자의-관점-10">원저자의 관점</a></h2>
+<p>Skill과 hook은 모두 Claude Code를 확장하지만 책임이 다르다. Skill은 모델이
+특정 작업을 수행하는 방법과 사용할 resource를 제공한다. Hook은 lifecycle
+경계에서 외부 process를 실행해 검사, 보완, 차단 같은 결정적 동작을 수행한다.</p>
+<p>Skill은 발견 단계와 실제 본문 로딩 단계를 분리한다. 모든 skill의 전체 내용을
+system prompt에 넣는 대신 짧은 이름과 설명으로 선택 가능성을 제공하고, 관련
+skill만 필요할 때 읽는다. 이것은 context 절약뿐 아니라 서로 관계없는 지침이
+모델 판단을 오염시키는 것을 줄인다.</p>
+<h2 id="hook의-process-경계"><a class="header" href="#hook의-process-경계">Hook의 process 경계</a></h2>
+<p>Hook은 host process 안에서 실행되는 무제한 plugin이 아니다. stdin으로 context를
+받고 stdout, stderr, exit code로 결과를 돌려주는 외부 process다. 호출 비용은
+있지만 crash와 memory leak을 host에서 격리하고, 언어나 package runtime에 대한
+결합도 줄인다.</p>
+<p>repository의 hook 설정을 매 tool call마다 다시 읽으면 실행 중 악성 변경이
+새 권한으로 승격될 수 있다. 원저자는 trust를 확인한 startup 시점의 설정을
+snapshot으로 고정하는 보안 경계를 설명한다.</p>
+<h2 id="skill-hook-tool을-구분하기"><a class="header" href="#skill-hook-tool을-구분하기">Skill, Hook, Tool을 구분하기</a></h2>
+<ul>
+<li>Skill: agent가 어떻게 판단하고 도구를 조합할지 안내한다.</li>
+<li>Tool: 실제 side effect나 관찰을 수행하고 결과를 agent에 반환한다.</li>
+<li>Hook: lifecycle 앞뒤에서 결정적 정책이나 외부 자동화를 실행한다.</li>
+</ul>
+<p>Skill 설명만으로 파일을 수정하거나 trace를 발행할 수는 없다. 반대로 tool이
+있어도 어떤 순서로 관찰하고 검증할지 모르면 안정적인 운영이 되지 않는다.</p>
+<h2 id="확장-경계"><a class="header" href="#확장-경계">확장 경계</a></h2>
+<pre><code class="language-mermaid">flowchart TB
+    MODEL["Agent 판단"]
+    SKILL["Skill: 절차·지식"]
+    TOOL["Tool: 실행·관찰"]
+    HOOK["Hook: lifecycle 정책"]
+    PLUGIN["Plugin: 배포 단위"]
+
+    PLUGIN --&gt; SKILL
+    PLUGIN --&gt; TOOL
+    PLUGIN --&gt; HOOK
+    SKILL --&gt; MODEL
+    MODEL --&gt; TOOL
+    TOOL --&gt; HOOK
+    HOOK --&gt; TOOL
+</code></pre>
+<p>Skill은 tool call을 대신하지 않고, Hook은 model의 다음 reasoning을 대신하지
+않는다. 각 경계가 실제로 어떤 input/output을 갖는지 분리해 설명해야 한다.</p>
+<h2 id="실제-source-skill도-tool-계약으로-들어온다"><a class="header" href="#실제-source-skill도-tool-계약으로-들어온다">실제 source: Skill도 Tool 계약으로 들어온다</a></h2>
+<pre><code class="language-typescript">export const SkillTool = buildTool({
+  name: SKILL_TOOL_NAME,
+  description: async ({ skill }) =&gt; `Execute skill: ${skill}`,
+  prompt: async () =&gt; getPrompt(getProjectRoot()),
+  toAutoClassifierInput: ({ skill }) =&gt; skill ?? '',
+})
+</code></pre>
+<p>실제 validation과 output schema는
+<a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/tools/SkillTool/SkillTool.ts#L331-L365"><code>SkillTool.ts</code> 331행부터</a>에 있다. Skill 본문이 바로 system
+prompt 전체에 합쳐지는 것이 아니라, 선택된 skill이 tool을 통해 확장 prompt로
+들어가는 경로를 확인한다.</p>
+<h2 id="직접-확인하기-1"><a class="header" href="#직접-확인하기-1">직접 확인하기</a></h2>
+<ol>
+<li>skill metadata와 실제 <code>SKILL.md</code> 로딩 시점을 찾는다.</li>
+<li>hook snapshot이 startup 이후 암묵적으로 다시 읽히는지 확인한다.</li>
+<li>MCP tool과 built-in tool이 <code>Tool</code> boundary에서 어디서 같아지는지 찾는다.</li>
+<li>실패한 hook의 exit code가 성공 result로 바뀌지 않는지 확인한다.</li>
+</ol>
+<h2 id="가져갈-패턴-10"><a class="header" href="#가져갈-패턴-10">가져갈 패턴</a></h2>
+<ul>
+<li>skill metadata는 짧고 선택 가능하게, 본문은 필요할 때만 로드한다.</li>
+<li>hook의 입력·출력·timeout·실패 의미를 protocol로 고정한다.</li>
+<li>외부 hook 실패를 성공으로 바꾸는 fallback을 만들지 않는다.</li>
+<li>repository trust 이후 설정 변경은 명시적으로 재승인한다.</li>
+<li>tool result는 agent의 다음 판단에 그대로 돌아가야 한다.</li>
+</ul>
+<h2 id="book-sdk에서-같이-보기-10"><a class="header" href="#book-sdk에서-같이-보기-10">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK의 Skill, Hook, permission, custom tool 장과 함께 읽는다. 이 강좌
+repository의 <code>.agents/skills</code>는 Codex와 Mothership이 공유하는 운영 지식이지만,
+Education Shell과 Opik을 실제로 제어하는 능력은 별도의 실제 tool contract에서
+나온다.</p>
+<h2 id="원문-10"><a class="header" href="#원문-10">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch12-extensibility.md">Chapter 12: Extensibility — Skills and Hooks</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="13장-터미널-ui"><a class="header" href="#13장-터미널-ui">13장: 터미널 UI</a></h1>
+<h2 id="원저자의-관점-11"><a class="header" href="#원저자의-관점-11">원저자의 관점</a></h2>
+<p>Claude Code의 terminal UI는 단순히 React component를 stdout에 출력하는
+구조가 아니다. model stream, tool progress와 사용자 입력이 빠르게 변하는 동안
+화면 전체를 다시 그리지 않도록 별도의 rendering hot path를 갖는다.</p>
+<p>원저자는 Ink 계층을 기반으로 하되 cell representation, string interning,
+buffer pooling, diff 계산을 성능에 맞게 조정한 구조를 설명한다. React는 화면의
+의미 구조와 상태 전이를 표현하고, 실제 terminal repaint는 더 낮은 수준의
+packed data와 비교 연산이 담당한다.</p>
+<h2 id="렌더링-파이프라인"><a class="header" href="#렌더링-파이프라인">렌더링 파이프라인</a></h2>
+<ol>
+<li>component tree가 현재 UI 상태를 만든다.</li>
+<li>layout 결과가 terminal cell buffer로 변환된다.</li>
+<li>이전 frame과 현재 frame의 차이를 계산한다.</li>
+<li>바뀐 cell만 ANSI sequence로 출력한다.</li>
+<li>재사용 가능한 buffer와 문자열은 pool에서 관리한다.</li>
+</ol>
+<p>이 경계 덕분에 stream chunk 하나가 올 때마다 전체 화면을 지우고 다시 쓰지
+않는다. 동시에 cursor, wide character, color, resize 같은 terminal 고유
+복잡성은 rendering boundary가 흡수한다.</p>
+<h2 id="교육-화면과의-차이"><a class="header" href="#교육-화면과의-차이">교육 화면과의 차이</a></h2>
+<p>Education Shell은 web/Electron UI이므로 이 terminal renderer를 복제할 이유가
+없다. 가져갈 것은 구현 자체가 아니라 “고빈도 raw event와 사람이 읽는 projection을
+분리한다”는 원칙이다. raw event를 화면에 JSON으로 쏟는 것과 빠른 UI는 같은
+문제가 아니다.</p>
+<h2 id="rendering-hot-path"><a class="header" href="#rendering-hot-path">Rendering hot path</a></h2>
+<pre><code class="language-mermaid">flowchart LR
+    R["React·Ink component tree"] --&gt; L["layout"]
+    L --&gt; C["packed terminal cells"]
+    C --&gt; D["이전 frame과 diff"]
+    D --&gt; A["최소 ANSI 출력"]
+    A --&gt; T["Terminal"]
+    P["string·style·buffer pool"] --&gt; C
+</code></pre>
+<p>React는 화면의 의미를 표현하지만, 고빈도 character diff는 더 낮은 rendering
+계층이 담당한다. 상태 update와 실제 terminal write를 같은 비용으로 취급하지
+않는다.</p>
+<h2 id="실제-source-frame-재사용"><a class="header" href="#실제-source-frame-재사용">실제 source: frame 재사용</a></h2>
+<pre><code class="language-typescript">reset(width: number, height: number, screen: Screen): void {
+  this.width = width
+  this.height = height
+  this.screen = screen
+  this.operations.length = 0
+  resetScreen(screen, width, height)
+  if (this.charCache.size &gt; 16384) this.charCache.clear()
+}
+</code></pre>
+<p><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/ink/output.ts#L170-L202"><code>Output.reset()</code></a>은 backing storage와 character cache를 frame
+사이에 재사용한다. cache가 무한히 자라지 않도록 명시적 상한도 둔다.</p>
+<h2 id="ui-projection-검토"><a class="header" href="#ui-projection-검토">UI projection 검토</a></h2>
+<ul>
+<li>assistant delta가 올 때 전체 message tree가 다시 layout되는가?</li>
+<li>tool progress label이 container 크기를 바꾸는가?</li>
+<li>raw event와 사용자용 message가 같은 component에서 JSON으로 섞이는가?</li>
+<li>실패와 permission state가 색상만으로 구분되는가?</li>
+</ul>
+<h2 id="가져갈-패턴-11"><a class="header" href="#가져갈-패턴-11">가져갈 패턴</a></h2>
+<ul>
+<li>상태 의미와 고빈도 painting hot path를 분리한다.</li>
+<li>동적 content가 layout 크기를 흔들지 않도록 frame 경계를 안정화한다.</li>
+<li>전체 redraw보다 이전 frame과의 실제 차이를 계산한다.</li>
+<li>최적화는 profile과 frame time 측정 뒤에 한다.</li>
+<li>display projection이 raw execution truth를 변경해서는 안 된다.</li>
+</ul>
+<h2 id="book-sdk에서-같이-보기-11"><a class="header" href="#book-sdk에서-같이-보기-11">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK의 streaming, terminal interaction, event rendering 장과 함께 읽는다.
+Mothership Chat은 OpenCode native event를 보존하되 사용자에게는 시간순 메시지,
+tool 상태와 필요한 evidence link를 읽을 수 있는 형태로 투사한다.</p>
+<h2 id="원문-11"><a class="header" href="#원문-11">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch13-terminal-ui.md">Chapter 13: The Terminal UI</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="14장-입력과-상호작용"><a class="header" href="#14장-입력과-상호작용">14장: 입력과 상호작용</a></h1>
+<h2 id="원저자의-관점-12"><a class="header" href="#원저자의-관점-12">원저자의 관점</a></h2>
+<p>terminal key input은 항상 한 글자나 하나의 key event로 오지 않는다. escape
+sequence, modifier, IME, paste, chord와 terminal 종류에 따라 여러 byte가 하나의
+의미를 만들 수 있다. 따라서 raw byte를 feature component가 직접 해석하면
+동일한 단축키 로직이 곳곳에 중복된다.</p>
+<p>원저자는 input tokenizer, keybinding resolver, context와 command handler를
+분리한다. parser는 여러 terminal protocol을 정규화된 <code>ParsedKey</code>로 바꾸고,
+resolver는 현재 UI context와 chord 상태에 따라 의미 있는 action을 선택한다.</p>
+<h2 id="context가-우선한다"><a class="header" href="#context가-우선한다">Context가 우선한다</a></h2>
+<p>같은 Enter나 Escape도 composer, permission dialog, autocomplete, plan 화면에서
+의미가 다르다. 전역 key handler 하나에 계속 조건을 추가하는 대신 현재 interaction
+context가 받을 수 있는 action을 제한한다.</p>
+<p>vim mode 같은 입력 방식은 단순 boolean보다 mode를 명시한 discriminated union이
+안전하다. 현재 mode에서 존재하지 않는 field를 type level에서 사용할 수 없게
+하면 상호작용 버그가 줄어든다.</p>
+<h2 id="byte에서-action까지"><a class="header" href="#byte에서-action까지">Byte에서 action까지</a></h2>
+<pre><code class="language-mermaid">flowchart LR
+    B["stdin bytes·IME·paste"] --&gt; T["tokenizer"]
+    T --&gt; K["ParsedKeystroke"]
+    K --&gt; C["현재 UI context"]
+    C --&gt; R["keybinding resolver"]
+    R --&gt; A["semantic action"]
+    A --&gt; H["component handler"]
+</code></pre>
+<p>feature component는 escape sequence나 modifier alias를 직접 해석하지 않는다.
+parser가 platform 차이를 흡수한 뒤 <code>action</code>을 전달한다.</p>
+<h2 id="실제-source-modifier-정규화"><a class="header" href="#실제-source-modifier-정규화">실제 source: modifier 정규화</a></h2>
+<pre><code class="language-typescript">export function parseKeystroke(input: string): ParsedKeystroke {
+  const parts = input.split('+')
+  const keystroke: ParsedKeystroke = {
+    key: '',
+    ctrl: false,
+    alt: false,
+    shift: false,
+    meta: false,
+    super: false,
+  }
+}
+</code></pre>
+<p>실제 switch는 <code>ctrl/control</code>, <code>alt/opt/option</code> 같은 alias를 같은 field로
+정규화한다. <a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/keybindings/parser.ts#L9-L35"><code>keybindings/parser.ts</code></a>에서 chord parser와 표시용
+canonicalization도 함께 확인한다.</p>
+<h2 id="한글-입력을-볼-때"><a class="header" href="#한글-입력을-볼-때">한글 입력을 볼 때</a></h2>
+<p>IME composition 중 text를 확정 입력으로 오인하지 않는지, composer state
+변경이 timeline 전체 selector를 깨우지 않는지 확인한다. 입력 지연을 model
+latency로 오인하지 않도록 key event, state update와 render 시간을 분리해
+계측해야 한다.</p>
+<h2 id="가져갈-패턴-12"><a class="header" href="#가져갈-패턴-12">가져갈 패턴</a></h2>
+<ul>
+<li>raw bytes, parsed key, semantic action을 서로 다른 계층으로 둔다.</li>
+<li>chord는 첫 key를 즉시 실행하지 않고 짧은 상태와 timeout으로 해석한다.</li>
+<li>focus와 modal context가 keybinding 우선순위를 소유한다.</li>
+<li>paste와 IME 입력을 반복 key press로 오인하지 않는다.</li>
+<li>접근성과 플랫폼 차이를 component마다 다시 구현하지 않는다.</li>
+</ul>
+<h2 id="book-sdk에서-같이-보기-12"><a class="header" href="#book-sdk에서-같이-보기-12">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK의 permission, question, abort와 interactive session 장에서 유용하다.
+Education Shell의 한글 composer나 Mothership 입력이 느리다면 모델 실행보다 먼저
+controlled input의 render 범위, logger, selector와 IME composition 경로를
+점검해야 한다.</p>
+<h2 id="원문-12"><a class="header" href="#원문-12">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch14-input-interaction.md">Chapter 14: Input and Interaction</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="15장-mcp--범용-도구-프로토콜"><a class="header" href="#15장-mcp--범용-도구-프로토콜">15장: MCP — 범용 도구 프로토콜</a></h1>
+<h2 id="원저자의-관점-13"><a class="header" href="#원저자의-관점-13">원저자의 관점</a></h2>
+<p>MCP의 가치는 새로운 tool call 문법을 만드는 데 있지 않다. 외부 server가
+자신의 tool과 resource를 발견 가능하게 공개하고, agent client가 이를 내장
+tool과 같은 실행 계약으로 다룰 수 있게 하는 데 있다.</p>
+<p>Claude Code는 stdio, HTTP, SSE, WebSocket, SDK와 IDE/remote 계열을 포함한 여러
+transport를 지원한다. transport는 연결 수명주기와 인증 방식이 다르지만,
+discovery 이후 model이 보는 tool은 공통 이름, description, input schema와
+result contract로 정규화된다.</p>
+<h2 id="연결에서-실행까지"><a class="header" href="#연결에서-실행까지">연결에서 실행까지</a></h2>
+<ol>
+<li>설정과 scope에서 MCP server 목록을 읽는다.</li>
+<li>transport별 connection과 인증을 준비한다.</li>
+<li>server의 tool 목록과 schema를 조회한다.</li>
+<li>충돌 없는 이름과 안정적인 description으로 wrapping한다.</li>
+<li>일반 tool pipeline에서 permission, execution과 result budget을 적용한다.</li>
+</ol>
+<p>MCP tool을 별도의 “낮은 등급 도구”로 취급하지 않는 것이 중요하다. 한 번
+정규화되면 built-in tool과 같은 model decision surface에 있어야 한다. 다만
+server 연결 실패와 schema 오류는 원래 출처를 유지한 채 보여 줘야 한다.</p>
+<pre><code class="language-mermaid">flowchart LR
+    C["MCP config"] --&gt; T["transport 연결"]
+    T --&gt; D["tools/list · schema discovery"]
+    D --&gt; W["Claude tool contract로 wrapping"]
+    W --&gt; P["공통 permission pipeline"]
+    P --&gt; E["server tool 실행"]
+    E --&gt; R["tool_result를 model에 반환"]
+</code></pre>
+<h2 id="실제-source-placeholder가-되는-공통-tool"><a class="header" href="#실제-source-placeholder가-되는-공통-tool">실제 source: placeholder가 되는 공통 tool</a></h2>
+<pre><code class="language-typescript">export const MCPTool = buildTool({
+  isMcp: true,
+  isOpenWorld() {
+    return false
+  },
+  name: 'mcp',
+  maxResultSizeChars: 100_000,
+  async checkPermissions() {
+    return { behavior: 'passthrough', message: 'MCPTool requires permission.' }
+  },
+})
+</code></pre>
+<p><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/tools/MCPTool/MCPTool.ts#L27-L75"><code>MCPTool.ts</code></a>의 기본 객체는 실행할 실제 server tool이 아니다.
+<code>mcpClient.ts</code>가 discovery 결과로 이름, description, schema와 <code>call()</code>을
+덮어쓸 수 있게 만든 공통 골격이다. 여기서 중요한 점은 동적으로 발견한 tool도
+<code>buildTool()</code>이 만든 동일한 permission과 result 계약에 들어온다는 것이다.</p>
+<h2 id="mcp와-직접-도구"><a class="header" href="#mcp와-직접-도구">MCP와 직접 도구</a></h2>
+<p>MCP가 모든 control boundary의 정답은 아니다. 같은 Electron renderer의 상태를
+즉시 조작하고 관찰하는 기능은 typed IPC tool이 더 단순할 수 있다. 외부 Notion,
+database, browser처럼 독립 service와 재사용 가능한 protocol 경계가 필요할 때
+MCP가 적합하다.</p>
+<p>핵심은 transport 선택이 아니라 agent가 tool result를 온전히 받고 다음 행동을
+스스로 결정할 수 있는지다.</p>
+<h2 id="가져갈-패턴-13"><a class="header" href="#가져갈-패턴-13">가져갈 패턴</a></h2>
+<ul>
+<li>protocol transport와 model-facing tool contract를 분리한다.</li>
+<li>server가 제공한 failure를 fake success로 바꾸지 않는다.</li>
+<li>tool 이름 충돌과 description 길이를 안정적으로 정규화한다.</li>
+<li>OAuth/token은 trace와 model context에 노출하지 않는다.</li>
+<li>내부 UI control을 이유 없이 remote protocol로 우회하지 않는다.</li>
+</ul>
+<h2 id="source-exercise"><a class="header" href="#source-exercise">Source exercise</a></h2>
+<ol>
+<li><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/tools/MCPTool/MCPTool.ts#L27-L75"><code>MCPTool.ts</code></a>에서 <code>Overridden in mcpClient.ts</code> 주석을 모두 찾는다.</li>
+<li>각 override가 discovery, permission, execution, presentation 중 어느 책임인지
+분류한다.</li>
+<li>server 연결 실패가 model에게 정상 <code>tool_result</code>로 전달되는지, host가 임의의
+성공 문자열로 바꾸는지 호출 경로를 따라간다.</li>
+</ol>
+<h2 id="book-sdk에서-같이-보기-13"><a class="header" href="#book-sdk에서-같이-보기-13">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK의 MCP, custom tool, permission 장과 연결된다. Notion 운영에는 공식
+Notion MCP처럼 실제 workspace object를 다루는 protocol을 사용하고, Pixel이나
+Education Shell renderer 제어는 실제 renderer observation을 반환하는 direct
+tool boundary를 유지하는 식으로 구분할 수 있다.</p>
+<h2 id="원문-13"><a class="header" href="#원문-13">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch15-mcp.md">Chapter 15: MCP — The Universal Tool Protocol</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="16장-원격-제어와-클라우드-실행"><a class="header" href="#16장-원격-제어와-클라우드-실행">16장: 원격 제어와 클라우드 실행</a></h1>
+<h2 id="원저자의-관점-14"><a class="header" href="#원저자의-관점-14">원저자의 관점</a></h2>
+<p>원격 agent에서는 읽기와 쓰기의 traffic 성격이 다르다. server에서 client로
+오는 model/event stream은 길고 지속적이며, client에서 server로 가는 permission
+reply, user message, abort는 상대적으로 드문 command다. 원저자는 이를 하나의
+양방향 추상화로 감추기보다 persistent read channel과 명시적 write request로
+분리한다.</p>
+<h2 id="비대칭-channel"><a class="header" href="#비대칭-channel">비대칭 channel</a></h2>
+<ul>
+<li>read: 장시간 유지되는 SSE stream으로 event를 순서대로 받는다.</li>
+<li>write: HTTP request로 message, permission reply와 control command를 보낸다.</li>
+<li>reconnect: 마지막으로 처리한 event 위치와 중복 제거 범위를 유지한다.</li>
+<li>lifecycle: remote session ID와 local view state를 구분한다.</li>
+</ul>
+<p>연결이 끊긴 뒤 같은 event가 다시 올 수 있으므로 bounded dedup이 필요하다.
+그렇다고 모든 event ID를 process lifetime 동안 무한히 보존하면 memory leak이
+된다. session/turn 경계와 최대 window를 명시해야 한다.</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant UI as Local UI
+    participant RM as RemoteSessionManager
+    participant WS as Persistent stream
+    participant HTTP as Command endpoint
+    UI-&gt;&gt;RM: connect(sessionId)
+    RM-&gt;&gt;WS: subscribe
+    WS--&gt;&gt;RM: SDK message
+    RM--&gt;&gt;UI: onMessage(message)
+    WS--&gt;&gt;RM: permission control_request
+    RM--&gt;&gt;UI: onPermissionRequested
+    UI-&gt;&gt;HTTP: permission reply
+    HTTP--&gt;&gt;WS: 같은 session 실행 계속
+</code></pre>
+<h2 id="실제-source-remote-session의-소유-상태"><a class="header" href="#실제-source-remote-session의-소유-상태">실제 source: remote session의 소유 상태</a></h2>
+<pre><code class="language-typescript">export class RemoteSessionManager {
+  private websocket: SessionsWebSocket | null = null
+  private pendingPermissionRequests:
+    Map&lt;string, SDKControlPermissionRequest&gt; = new Map()
+
+  constructor(
+    private readonly config: RemoteSessionConfig,
+    private readonly callbacks: RemoteSessionCallbacks,
+  ) {}
+}
+</code></pre>
+<p><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/remote/RemoteSessionManager.ts#L88-L151"><code>RemoteSessionManager.ts</code></a>는 연결과 pending permission을 같은
+remote session manager에 둔다. <code>control_request</code>는 map에 보존되고,
+<code>control_cancel_request</code>가 오면 삭제한 뒤 UI callback에 취소 사실을 전달한다.
+permission을 별도 대화의 prompt로 바꾸는 projection이 아니다.</p>
+<h2 id="resume의-의미"><a class="header" href="#resume의-의미">Resume의 의미</a></h2>
+<p>resume은 permission dialog 뒤에 별도 session을 만드는 동작이 아니다. 살아 있는
+SSE에서 permission에 답한 뒤 같은 실행이 계속 흐르는 것이 정상이다. session
+resume은 process 재시작이나 연결 단절 뒤 server가 보존한 같은 대화를 다시
+연결할 때 의미가 있다.</p>
+<h2 id="가져갈-패턴-14"><a class="header" href="#가져갈-패턴-14">가져갈 패턴</a></h2>
+<ul>
+<li>stream 유지와 command 전송을 같은 수명주기로 오해하지 않는다.</li>
+<li>local run ID와 remote session ID를 모두 기록하되 서로 바꾸지 않는다.</li>
+<li>reconnect 시 중복 제거와 유실 여부를 관측 가능하게 만든다.</li>
+<li>permission reply는 새 turn이나 새 session을 암묵적으로 만들지 않는다.</li>
+<li>session이 없으면 없는 이유를 보고하고 임의의 새 session으로 성공시키지 않는다.</li>
+</ul>
+<h2 id="실패를-읽는-질문"><a class="header" href="#실패를-읽는-질문">실패를 읽는 질문</a></h2>
+<ul>
+<li>연결 재시도 뒤 같은 control request가 재방출되면 request ID로 구분되는가?</li>
+<li>취소된 permission이 UI에 남아 클릭 가능한 유령 banner가 되는가?</li>
+<li>local composer state와 remote session truth 중 어느 쪽이 실행 상태를 결정하는가?</li>
+<li>stream이 끊겼을 때 새 session을 만들어 성공처럼 보이게 하는 fallback이 있는가?</li>
+</ul>
+<h2 id="book-sdk에서-같이-보기-14"><a class="header" href="#book-sdk에서-같이-보기-14">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK의 session resume, streaming, permission과 remote runtime 장에 대응한다.
+Mothership은 embedded OpenCode server의 native SSE를 소유하고, 일반 Education
+Chat provider projection과 섞지 않는다. 두 surface가 같은 project를 사용해도
+session truth는 각각의 runtime ID에 있다.</p>
+<h2 id="원문-14"><a class="header" href="#원문-14">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch16-remote.md">Chapter 16: Remote Control and Cloud Execution</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="17장-모든-밀리초와-토큰"><a class="header" href="#17장-모든-밀리초와-토큰">17장: 모든 밀리초와 토큰</a></h1>
+<h2 id="원저자의-관점-15"><a class="header" href="#원저자의-관점-15">원저자의 관점</a></h2>
+<p>에이전트 성능은 model latency 하나로 설명되지 않는다. startup module loading,
+keychain/network I/O, prompt cache, output token reservation, file search,
+stream parsing과 UI rendering이 누적된다. 원저자는 추측성 최적화보다 먼저
+측정 지점을 촘촘하게 두는 방식을 강조한다.</p>
+<h2 id="context와-비용"><a class="header" href="#context와-비용">Context와 비용</a></h2>
+<p>API 요청이 허용하는 context에서 <code>max_output_tokens</code>로 예약한 영역은 input에
+사용할 수 없다. 실제 p99 output보다 지나치게 큰 값을 항상 예약하면 긴 대화의
+usable context를 스스로 줄인다. 보수적인 기본값을 쓰고 truncation이 실제로
+발생할 때 확장하는 편이 낫다.</p>
+<p>prompt cache 역시 비용 구조다. 안정적 system prompt와 tool definition을 앞에,
+session마다 변하는 정보는 뒤에 두어 prefix를 유지한다. 동적 tool description
+하나가 중간에 들어가면 이후 cache를 전부 무효화할 수 있다.</p>
+<h2 id="실행-hot-path"><a class="header" href="#실행-hot-path">실행 hot path</a></h2>
+<ul>
+<li>startup I/O는 module import와 겹쳐 실행한다.</li>
+<li>read-only tool의 안전한 연속 구간은 streaming 중 먼저 시작한다.</li>
+<li>긴 tool input JSON은 chunk마다 partial parse하지 않고 모아 한 번 파싱한다.</li>
+<li>file search는 저렴한 bitmap pre-filter로 후보를 줄인다.</li>
+<li>terminal frame은 packed cell과 diff로 필요한 부분만 갱신한다.</li>
+</ul>
+<p>이 기법들은 화려한 알고리즘보다 병목이 실제로 있는 위치에 기본기를 적용한
+결과다.</p>
+<pre><code class="language-mermaid">flowchart LR
+    U["user input"] --&gt; C["context loading"]
+    C --&gt; S["schema·client setup"]
+    S --&gt; H["response headers"]
+    H --&gt; F["first chunk / TTFT"]
+    F --&gt; X["tool execution"]
+    X --&gt; E["turn end"]
+</code></pre>
+<h2 id="실제-source-추측-전에-checkpoint"><a class="header" href="#실제-source-추측-전에-checkpoint">실제 source: 추측 전에 checkpoint</a></h2>
+<pre><code class="language-typescript">export function queryCheckpoint(name: string): void {
+  if (!ENABLED) return
+  const perf = getPerformance()
+  perf.mark(name)
+  memorySnapshots.set(name, process.memoryUsage())
+}
+</code></pre>
+<p><a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/utils/queryProfiler.ts#L1-L76"><code>queryProfiler.ts</code></a>는 user input부터 context loading, schema
+build, request dispatch, response header, first chunk, tool execution까지 서로 다른
+checkpoint를 둔다. “느리다”는 한 문장을 TTFT, tool latency, render latency로
+분해할 수 있어야 최적화가 설계 오염으로 변하지 않는다.</p>
+<h2 id="가져갈-패턴-15"><a class="header" href="#가져갈-패턴-15">가져갈 패턴</a></h2>
+<ul>
+<li>startup, first token, tool latency, render 시간을 따로 측정한다.</li>
+<li>context budget과 비용을 같은 지표로 보지 않는다.</li>
+<li>cache hit은 prompt 구조와 실제 usage field로 검증한다.</li>
+<li>speculation에는 abort와 정상 경로 복귀가 있어야 한다.</li>
+<li>성능 측정 없는 최적화는 architecture를 복잡하게 만들 수 있다.</li>
+</ul>
+<h2 id="측정-실습"><a class="header" href="#측정-실습">측정 실습</a></h2>
+<ol>
+<li><code>query_first_chunk_received - query_api_request_sent</code>를 provider 응답 지연으로
+분리한다.</li>
+<li><code>query_tool_execution_start/end</code>에서 느린 tool 하나를 찾는다.</li>
+<li>같은 run의 renderer timing과 비교해 model, tool, UI 중 실제 병목을 정한다.</li>
+<li>cache usage field가 없으면 prompt cache hit을 관측했다고 쓰지 않는다.</li>
+</ol>
+<h2 id="book-sdk에서-같이-보기-15"><a class="header" href="#book-sdk에서-같이-보기-15">Book SDK에서 같이 보기</a></h2>
+<p>Book SDK의 token usage, prompt caching, streaming, concurrent tool과 production
+운영 장에 직접 연결된다. Education Shell과 Opik에는 실제 provider, model,
+cache read/write와 tool timing을 기록하고, 관측되지 않은 cache hit을 추론해서
+평가 결과로 만들지 않는다.</p>
+<h2 id="원문-15"><a class="header" href="#원문-15">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch17-performance.md">Chapter 17: Every Millisecond, Every Token</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="18장-우리가-배운-것"><a class="header" href="#18장-우리가-배운-것">18장: 우리가 배운 것</a></h1>
+<h2 id="한-장으로-보는-실행-경계"><a class="header" href="#한-장으로-보는-실행-경계">한 장으로 보는 실행 경계</a></h2>
+<pre><code class="language-mermaid">flowchart TB
+    I["입력·remote command"] --&gt; Q["async generator query loop"]
+    Q --&gt; M["model stream"]
+    Q --&gt; T["self-describing tools"]
+    T --&gt; P["permission·hook·MCP boundary"]
+    T --&gt; S["subagent·fork"]
+    M --&gt; C["context·compaction·memory"]
+    Q --&gt; O["terminal result"]
+    Q --&gt; E["raw event·profile evidence"]
+</code></pre>
+<h2 id="원저자가-정리한-다섯-가지-선택"><a class="header" href="#원저자가-정리한-다섯-가지-선택">원저자가 정리한 다섯 가지 선택</a></h2>
+<h3 id="1-callback-graph보다-generator-loop"><a class="header" href="#1-callback-graph보다-generator-loop">1. Callback graph보다 generator loop</a></h3>
+<p>하나의 async generator가 model stream, tool execution, continuation과 terminal
+상태를 연결한다. 중단 이유는 discriminated union으로 표현해 호출자가 빠짐없이
+처리한다. 복잡성은 크지만 “왜 loop가 끝났는가”를 찾는 경로가 한곳에 남는다.</p>
+<h3 id="2-database보다-파일-기반-memory"><a class="header" href="#2-database보다-파일-기반-memory">2. Database보다 파일 기반 memory</a></h3>
+<p>고급 query보다 사람이 직접 읽고 수정할 수 있는 투명성을 선택한다. LLM recall이
+단순 storage의 검색 한계를 보완한다. 이 선택은 규모가 커질 때 다시 시험받지만,
+agent가 무엇을 기억하는지 외부에서 확인할 수 있게 한다.</p>
+<h3 id="3-중앙-orchestrator보다-self-describing-tool"><a class="header" href="#3-중앙-orchestrator보다-self-describing-tool">3. 중앙 orchestrator보다 self-describing tool</a></h3>
+<p>각 tool이 이름, schema, prompt contribution, concurrency 안전성과 실행을
+자기 계약으로 제공한다. MCP tool도 같은 interface로 wrapping된 뒤 일반 tool
+pipeline에서 permission과 result 처리를 받는다.</p>
+<h3 id="4-fresh-summary보다-fork와-cache-공유"><a class="header" href="#4-fresh-summary보다-fork와-cache-공유">4. Fresh summary보다 fork와 cache 공유</a></h3>
+<p>부모의 byte-identical prefix를 공유하는 fork는 작은 검증 작업도 경제적으로
+분리한다. 그 대신 fork lifecycle, 재귀 방지와 cache 안정성을 엄격히 관리해야
+한다.</p>
+<h3 id="5-in-process-plugin보다-hook-process"><a class="header" href="#5-in-process-plugin보다-hook-process">5. In-process plugin보다 hook process</a></h3>
+<p>외부 process의 시작 비용을 감수하고 crash, memory와 trust 경계를 분리한다.
+stdin/stdout/exit code라는 단순 protocol은 host API보다 오래 유지될 수 있다.</p>
+<h2 id="무엇이-일반화되고-무엇이-규모-의존적인가"><a class="header" href="#무엇이-일반화되고-무엇이-규모-의존적인가">무엇이 일반화되고 무엇이 규모 의존적인가</a></h2>
+<p>generator loop, 파일 memory와 provenance, 비대칭 remote channel, prompt cache
+안정성, self-describing tool은 작은 agent에도 적용할 수 있다. 반면 fork한
+terminal renderer, 수십 개 startup checkpoint, 여덟 종류 MCP transport는
+Claude Code의 규모와 배포 환경 때문에 필요한 선택이다.</p>
+<p>원저자는 파일 수 자체보다 복잡성이 모이는 boundary를 보라고 한다. raw keyboard
+byte를 typed action으로, MCP JSON-RPC를 tool로, hook exit code를 permission
+decision으로 바꾸는 경계가 외부의 혼란을 흡수한다.</p>
+<h2 id="book-sdk-강좌가-가져갈-결론"><a class="header" href="#book-sdk-강좌가-가져갈-결론">Book SDK 강좌가 가져갈 결론</a></h2>
+<p>강좌는 이 구현을 Claude SDK의 공식 계약으로 오해해서는 안 된다. 이 책은 특정
+Claude Code source snapshot을 읽어 실행 구조를 해석한 저자의 관점이다. Book
+SDK는 공식 SDK에서 실제로 관측한 event와 API 계약을 중심에 두고, 이 원저자의
+분석을 “왜 이런 event와 경계가 필요한가”를 이해하는 외부 지도처럼 연결한다.</p>
+<p>학생에게는 다음 세 층을 함께 보여 주는 것이 정직하다.</p>
+<ol>
+<li>공식 SDK와 문서가 보장하는 계약</li>
+<li>실제 Education Shell session에서 저장한 raw evidence</li>
+<li>원저자가 source를 읽고 제시한 실행 구조와 설계 해석</li>
+</ol>
+<p>세 층이 일치할 때는 강한 설명이 되고, 다를 때는 그 차이 자체가 학습 자료다.</p>
+<h2 id="실제-source-종료-이유를-반환하는-generator"><a class="header" href="#실제-source-종료-이유를-반환하는-generator">실제 source: 종료 이유를 반환하는 generator</a></h2>
+<pre><code class="language-typescript">export async function* query(
+  params: QueryParams,
+): AsyncGenerator&lt;StreamEvent | RequestStartEvent | Message, Terminal&gt; {
+  const consumedCommandUuids: string[] = []
+  const terminal = yield* queryLoop(params, consumedCommandUuids)
+  for (const uuid of consumedCommandUuids) {
+    notifyCommandLifecycle(uuid, 'completed')
+  }
+  return terminal
+}
+</code></pre>
+<p>실제 union에는 tombstone과 tool summary도 포함된다. 핵심은
+<a href="https://github.com/codeaashu/claude-code/blob/6a2590911df240ff5ea56aa355696cfb94d128cb/src/query.ts#L219-L248"><code>query()</code></a>가 stream 값을 <code>yield</code>하면서도 마지막에 <code>Terminal</code>을
+반환한다는 점이다. UI가 마지막 delta를 보았다는 사실과 run이 어떤 이유로
+종료됐다는 사실은 같은 신호가 아니다.</p>
+<h2 id="독자가-직접-검증할-것"><a class="header" href="#독자가-직접-검증할-것">독자가 직접 검증할 것</a></h2>
+<ul>
+<li><code>queryLoop()</code>의 모든 <code>continue</code>와 <code>return</code>이 어떤 transition/terminal을 남기는가?</li>
+<li>tool result는 다음 model iteration의 message에 어떻게 들어가는가?</li>
+<li>SDK에서 관측한 event만으로 source 내부 최적화를 증명할 수 있는가?</li>
+<li>다이어그램이 실제 source보다 더 강한 존재론을 주장하고 있지 않은가?</li>
+</ul>
+<h2 id="원문-16"><a class="header" href="#원문-16">원문</a></h2>
+<p><a href="https://github.com/alejandrobalderas/claude-code-from-source/blob/a6d5e452a8e0dd925c22c407c84611b1994562eb/book/ch18-epilogue.md">Chapter 18: What We Learned</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="출처와-자료-성격"><a class="header" href="#출처와-자료-성격">출처와 자료 성격</a></h1>
+<ul>
+<li>원저자: Alejandro Balderas 및 원 저장소 기여자</li>
+<li>원 저장소: <a href="https://github.com/alejandrobalderas/claude-code-from-source">https://github.com/alejandrobalderas/claude-code-from-source</a></li>
+<li>원본 공개 사이트: <a href="https://claude-code-from-source.com">https://claude-code-from-source.com</a></li>
+<li>한국어판 기준 commit:
+<code>a6d5e452a8e0dd925c22c407c84611b1994562eb</code></li>
+</ul>
+<p>원저작물은 Claude Code source map을 분석해 작성한 독립 교육 자료다. 원본
+저장소의 설명에 따르면 Claude Code 소스 코드를 포함하지 않으며, 예제 코드는
+아키텍처 패턴을 설명하기 위해 새로 작성한 의사코드다.</p>
+<p>이 한국어판은 원본의 장 구조, 논지와 설계 교훈을 한국어 독자가 따라갈 수 있게
+정리한 무료 참고판이다. 원문을 대체하지 않으며, 세부 구현과 전체 서사는 각 장의
+원문 링크에서 확인한다.</p>
+<p>이 자료와 한국어판은 Anthropic, PBC의 공식 문서가 아니며 Anthropic의 승인이나
+보증을 받지 않았다. Claude Code는 Anthropic의 제품이다.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="mermaid-init.js"></script>
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+
+    </div>
+    </body>
+</html>
